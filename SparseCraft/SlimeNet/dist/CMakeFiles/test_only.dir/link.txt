@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/test_only.dir/test_only.cpp.o CMakeFiles/test_only.dir/src/cnn.cpp.o CMakeFiles/test_only.dir/src/data_loader.cpp.o -o test_only  -lm 

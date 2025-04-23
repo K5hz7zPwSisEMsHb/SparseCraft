@@ -1,0 +1,4 @@
+/root/SparseCraft/SlimeNet/dist/CMakeFiles/slime_s.dir
+/root/SparseCraft/SlimeNet/dist/CMakeFiles/test_only.dir
+/root/SparseCraft/SlimeNet/dist/CMakeFiles/edit_cache.dir
+/root/SparseCraft/SlimeNet/dist/CMakeFiles/rebuild_cache.dir

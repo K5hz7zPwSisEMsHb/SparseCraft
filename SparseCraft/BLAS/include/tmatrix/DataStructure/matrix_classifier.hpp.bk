@@ -1,0 +1,80 @@
+#pragma once
+
+#include <bitset>
+#include <string>
+#include <vector>
+#include <array>
+#include <fstream>
+#include <set>
+#include <numeric>
+#include <algorithm>
+#include <functional>
+#include <onnxruntime_cxx_api.h>
+#include <tmatrix/common.h>
+
+class MatrixClassifier
+{
+public:
+    MatrixClassifier(const std::string &model_path);
+    ~MatrixClassifier();
+
+    struct Position
+    {
+        int row;
+        int col;
+        Position(int r, int c) : row(r), col(c) {}
+    };
+
+    TileFormat predict(const bit256 &input);
+
+private:
+    // 特征提取相关
+    std::vector<float> extract_features(const bit256 &input);
+    std::vector<float> standardize_features(const std::vector<float> &features);
+
+    // 块检测
+    std::vector<std::vector<Position>> find_blocks(const std::array<std::array<float, 16>, 16> &matrix);
+
+    // 统计函数模板
+    template <typename T, size_t N>
+    float calculate_mean(const std::array<T, N> &arr);
+
+    template <typename T, size_t N>
+    float calculate_std(const std::array<T, N> &arr);
+
+    // vector类型的统计函数
+    float calculate_mean(const std::vector<float> &vec);
+    float calculate_std(const std::vector<float> &vec);
+
+    // ONNX运行时相关
+    Ort::Env env;
+    Ort::Session session;
+
+    // 标准化参数
+    std::vector<float> scaler_mean;
+    std::vector<float> scaler_scale;
+};
+
+// 模板函数的实现必须在头文件中
+template <typename T, size_t N>
+float MatrixClassifier::calculate_mean(const std::array<T, N> &arr)
+{
+    float sum = 0.0f;
+    for (const auto &val : arr)
+    {
+        sum += static_cast<float>(val);
+    }
+    return sum / N;
+}
+
+template <typename T, size_t N>
+float MatrixClassifier::calculate_std(const std::array<T, N> &arr)
+{
+    float mean = calculate_mean(arr);
+    float variance = 0.0f;
+    for (const auto &val : arr)
+    {
+        variance += std::pow(static_cast<float>(val) - mean, 2);
+    }
+    return std::sqrt(variance / N);
+}

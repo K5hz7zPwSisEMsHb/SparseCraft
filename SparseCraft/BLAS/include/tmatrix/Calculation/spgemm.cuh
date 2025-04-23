@@ -1,0 +1,1 @@
+int test_spgemm(const char *filename, int repeat, int device);

@@ -1,0 +1,74 @@
+[
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/cuda-12.4/bin/nvcc -forward-unknown-to-host-compiler  --options-file CMakeFiles/Motivation2.dir/includes_CUDA.rsp  -gencode arch=compute_89,code=sm_89 -ccbin /usr/local/gcc-12/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd -g -g -std=c++17 \"--generate-code=arch=compute_89,code=[compute_89,sm_89]\" -x cu -c /home/lhc/CV-Tile/Motivation/Motivation2/main.cu -o CMakeFiles/Motivation2.dir/main.cu.o",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/main.cu",
+  "output": "CMakeFiles/Motivation2.dir/main.cu.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/load_balance.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/load_balance.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/load_balance.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/load_balance.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/cuda-12.4/bin/nvcc -forward-unknown-to-host-compiler  --options-file CMakeFiles/Motivation2.dir/includes_CUDA.rsp  -gencode arch=compute_89,code=sm_89 -ccbin /usr/local/gcc-12/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd -g -g -std=c++17 \"--generate-code=arch=compute_89,code=[compute_89,sm_89]\" -x cu -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spgemm.cu -o CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spgemm.cu.o",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spgemm.cu",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spgemm.cu.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/cuda-12.4/bin/nvcc -forward-unknown-to-host-compiler  --options-file CMakeFiles/Motivation2.dir/includes_CUDA.rsp  -gencode arch=compute_89,code=sm_89 -ccbin /usr/local/gcc-12/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd -g -g -std=c++17 \"--generate-code=arch=compute_89,code=[compute_89,sm_89]\" -x cu -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spmm.cu -o CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spmm.cu.o",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spmm.cu",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spmm.cu.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/cuda-12.4/bin/nvcc -forward-unknown-to-host-compiler  --options-file CMakeFiles/Motivation2.dir/includes_CUDA.rsp  -gencode arch=compute_89,code=sm_89 -ccbin /usr/local/gcc-12/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd -g -g -std=c++17 \"--generate-code=arch=compute_89,code=[compute_89,sm_89]\" -x cu -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spmv.cu -o CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spmv.cu.o",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Calculation/spmv.cu",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Calculation/spmv.cu.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/DataStructure/common.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/DataStructure/common.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/DataStructure/common.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/DataStructure/common.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/cuda-12.4/bin/nvcc -forward-unknown-to-host-compiler  --options-file CMakeFiles/Motivation2.dir/includes_CUDA.rsp  -gencode arch=compute_89,code=sm_89 -ccbin /usr/local/gcc-12/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd -g -g -std=c++17 \"--generate-code=arch=compute_89,code=[compute_89,sm_89]\" -x cu -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/DataStructure/hd.cu -o CMakeFiles/Motivation2.dir/src/tmatrix/DataStructure/hd.cu.o",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/DataStructure/hd.cu",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/DataStructure/hd.cu.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/MMIO/mmio_highlevel.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/MMIO/mmio_highlevel.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/MMIO/mmio_highlevel.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/MMIO/mmio_highlevel.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/Utils/MemoryPool.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/MemoryPool.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/MemoryPool.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Utils/MemoryPool.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/Utils/bitmap_utils.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/bitmap_utils.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/bitmap_utils.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Utils/bitmap_utils.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/Utils/msg.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/msg.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/Utils/msg.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/Utils/msg.cpp.o"
+},
+{
+  "directory": "/home/lhc/CV-Tile/Motivation/Motivation2/build",
+  "command": "/usr/local/gcc-12/bin/g++  -I/home/lhc/CV-Tile/Motivation/Motivation2/include  -Ofast -g -std=gnu++17 -fopenmp -o CMakeFiles/Motivation2.dir/src/tmatrix/common.cpp.o -c /home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/common.cpp",
+  "file": "/home/lhc/CV-Tile/Motivation/Motivation2/src/tmatrix/common.cpp",
+  "output": "CMakeFiles/Motivation2.dir/src/tmatrix/common.cpp.o"
+}
+]

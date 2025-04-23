@@ -1,0 +1,39 @@
+[project]
+name = "Exp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [ "Qpro",]
+
+[build-system]
+requires = [ "poetry-core",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "Exp"
+version = "0.1.0"
+description = "your pypi lib description"
+authors = [ "Rhythmicc <rhythmlian.cn@gmail.com>",]
+license = "MIT"
+readme = "README.md"
+
+[tool.qpro]
+[[tool.qpro.server_targets]]
+user = ""
+host = ""
+port = 22
+path = ""
+
+[tool.poetry.dependencies]
+python = "^3.8"
+qpro = "^0.12.22"
+
+[tool.poetry.scripts]
+Exp = "ExpCommander.main:main"
+
+[tool.qpro.config]
+build = ""
+entry_point = "ExpCommander/main.py"
+executable = "python3 -m ExpCommander.main"
+enable_complete = true

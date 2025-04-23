@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.cu": "cpp",
+        "*.vt": "verilog",
+        "bitset": "cpp",
+        "new": "cpp"
+    }
+}

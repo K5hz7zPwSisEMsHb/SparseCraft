@@ -1,0 +1,1 @@
+int test_spmm(const char *filename, int repeat, int right_n, int device);

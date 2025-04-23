@@ -1,0 +1,11 @@
+index,mtx,gflops
+0,2634_TSOPF_RS_b678_c2.mtx,2.673
+1,2200_nemeth19.mtx,3.472
+2,2340_raefsky3.mtx,3.938
+3,2449_rma10.mtx,4.352
+4,2305_msc10848.mtx,4.470
+5,2413_trdheim.mtx,4.600
+6,2148_heart3.mtx,4.756
+7,2412_opt1.mtx,4.850
+8,2453_pkustk07.mtx,5.138
+9,2479_ramage02.mtx,5.285

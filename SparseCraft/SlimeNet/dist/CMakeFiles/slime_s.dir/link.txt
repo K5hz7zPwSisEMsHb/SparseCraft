@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/slime_s.dir/main.cpp.o CMakeFiles/slime_s.dir/src/cnn.cpp.o CMakeFiles/slime_s.dir/src/data_loader.cpp.o -o slime_s 

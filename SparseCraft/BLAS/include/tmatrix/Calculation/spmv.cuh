@@ -1,0 +1,1 @@
+int test_spmv(const char* filename, int repeat, int device);
