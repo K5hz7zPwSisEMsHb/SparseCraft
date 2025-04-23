@@ -1,0 +1,70 @@
+import time
+import queue
+from . import external_exec, mtx_dir_path
+
+task_q = queue.Queue()
+info_q = queue.Queue()
+erro_q = queue.Queue()
+
+def workload(device_id, task, mtx, process, *args):
+    print(f'./dist/{task} {" ".join([str(i) for i in args])} "{mtx_dir_path}/{mtx}"')
+    st, rt = external_exec(f'export CUDA_VISIBLE_DEVICES={device_id} && ./dist/{task} {" ".join([str(i) for i in args])} "{mtx_dir_path}/{mtx}"', without_output=True)
+    if not st:
+        rt = rt.splitlines()[-1]
+        info_q.put([mtx] + rt.strip().split(','))
+    elif st != 1:
+        erro_q.put([mtx, rt])
+    process[0].advance(process[1])
+
+def info_consumer(odf, csv):
+    while True:
+        info = info_q.get()
+        if not info:
+            break
+        odf.loc[odf.shape[0]] = [odf.shape[0]] + info
+        odf.to_csv(csv, index=False)
+
+def erro_consumer(task):
+    with open(f'dist/odf/{task}-err.log', 'a') as f:
+        while True:
+            erro = erro_q.get()
+            if not erro:
+                break
+            f.write(f'{erro[0]}\n{erro[1]}\n\n')
+
+def consumer(task, snum, ls):
+    while ls:
+        mtx = ls.pop(0)
+        workload(task, mtx, snum)
+    info_q.put(None)
+    erro_q.put(None)
+
+def start_framework(device_id, task, ls, odf, csv, *args):
+    from concurrent.futures import ThreadPoolExecutor, wait
+    
+    executor = ThreadPoolExecutor(max_workers=2)
+    init_thread_manage = []
+    
+    try:
+        init_thread_manage.append(executor.submit(info_consumer, odf, csv))
+        init_thread_manage.append(executor.submit(erro_consumer, task))
+        
+        from QuickStart_Rhy.TuiTools.Bar import NormalProgressBar
+
+        process, task_id = NormalProgressBar(task, len(ls))
+        process.start()
+        while ls:
+            mtx = ls.pop(0)
+            workload(device_id, task, mtx, (process, task_id), *args)
+
+        info_q.put(None)
+        erro_q.put(None)
+        if process:
+            process.stop()
+        wait(init_thread_manage)
+    except KeyboardInterrupt:
+        info_q.put(None)
+        erro_q.put(None)
+        if process:
+            process.stop()
+        wait(init_thread_manage)
