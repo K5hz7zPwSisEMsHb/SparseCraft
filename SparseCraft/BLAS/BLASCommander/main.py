@@ -86,7 +86,7 @@ def spmv():
     """
     import pandas
 
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device = info.split()
 
@@ -123,7 +123,7 @@ def spmm(right_n: int = 8, device: int = 0):
     """
     import pandas
 
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device = info.split()
 
@@ -191,7 +191,7 @@ def samples():
     """
     run samples
     """
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device = info.split()
     mtx = ['2430_mc2depi.mtx', '2453_pkustk07.mtx', '2305_msc10848.mtx', '2449_rma10.mtx', '2479_ramage02.mtx', '2412_opt1.mtx', '2420_TSC_OPF_1047.mtx', '2413_trdheim.mtx', '2148_heart3.mtx', '2200_nemeth19.mtx', '2340_raefsky3.mtx', '2634_TSOPF_RS_b678_c2.mtx']

@@ -70,7 +70,7 @@ def test(opt: str):
     """
     import pandas as pd
 
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device_id = info.split()
 
@@ -102,7 +102,7 @@ def test(opt: str):
 def samples(opt: str):
     import pandas as pd
 
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device_id = info.split()
 
