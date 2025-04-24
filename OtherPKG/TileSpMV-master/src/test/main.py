@@ -55,7 +55,7 @@ def samples():
             columns=[
                 "index",
                 "mtx",
-                'convert_time',
+                'cvt_time',
                 "gflops",
             ]
         )
