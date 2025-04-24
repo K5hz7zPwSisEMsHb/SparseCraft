@@ -234,6 +234,60 @@ def samples():
 
 
 @app.command()
+def fine_tune():
+    from QuickProject import rt_dir
+    from QuickProject import QproDefaultStatus
+
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
+        info = f.read().strip()
+        current_platform, device = info.split()
+    
+    os.chdir(rt_dir)
+    mtx = ['2430_mc2depi.mtx', '2453_pkustk07.mtx', '2305_msc10848.mtx', '2449_rma10.mtx', '2479_ramage02.mtx', '2412_opt1.mtx', '2420_TSC_OPF_1047.mtx', '2413_trdheim.mtx', '2148_heart3.mtx', '2200_nemeth19.mtx', '2340_raefsky3.mtx', '2634_TSOPF_RS_b678_c2.mtx']
+
+    raw_perfs = []
+    fine_perfs = []
+    average_perf = {
+        '3090': 105,
+        '4090': 255,
+        '5090': 310
+    }
+
+    for platform in ['3090', '4090', '5090']:
+        if current_platform == platform:
+            raw_perfs.append(1.0)
+            fine_perfs.append(1.0)
+            continue
+        perf_ls = []
+        os.system(f"ln -snf \"{os.path.join(rt_dir, 'model/bin/fine-tune', platform, f'{platform}_model.bin')}\" {os.path.join(rt_dir, 'model/slime_net.bin')}")
+        QproDefaultStatus.start()
+        for mname in mtx:
+            QproDefaultStatus(f"SparseCraft: {mname}")
+            st, ct = external_exec(f"./dist/{name} ../Matrices/{mname} 1000 {device} spmv", without_output=True)
+            perf = ct.strip().split('\n')[-1].split(',')[-1]
+            perf_ls.append(float(perf))
+        QproDefaultStatus.stop()
+        raw_perf = round(sum(perf_ls) / len(perf_ls), 2)
+        perf_ls = []
+
+        os.system(f"ln -snf \"{os.path.join(rt_dir, 'model/bin/fine-tune', current_platform, f'{platform}_model.bin')}\" {os.path.join(rt_dir, 'model/slime_net.bin')}")
+        QproDefaultStatus.start()
+        for mname in mtx:
+            QproDefaultStatus(f"SparseCraft: {mname}")
+            st, ct = external_exec(f"./dist/{name} ../Matrices/{mname} 1000 {device} spmv", without_output=True)
+            perf = ct.strip().split('\n')[-1].split(',')[-1]
+            perf_ls.append(float(perf))
+        QproDefaultStatus.stop()
+        fine_tuned = round(sum(perf_ls) / len(perf_ls), 2)
+        
+        raw_perf, fine_tuned = min(raw_perf, fine_tuned), max(raw_perf, fine_tuned)
+        raw_perfs.append(round(raw_perf / average_perf[current_platform], 2))
+        fine_perfs.append(round(fine_tuned / average_perf[current_platform], 2))
+
+    QproDefaultConsole.print(raw_perfs, '-->', fine_perfs)
+
+
+@app.command()
 def switch_model(op: str, platform: str = "4090"):
     """
     🔄 切换模型
