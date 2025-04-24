@@ -59,6 +59,7 @@ def init(platform: str):
     os.chdir(pwd)
 
     os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM")
+    os.system(f'ln -snf {rt_dir}/CompileConfig/ASpT/{platform}/compile_GPU_SpMM_ASpT.sh compile_GPU_SpMM_ASpT.sh')
     os.system("./compile_GPU_SpMM_ASpT.sh")
     os.chdir(pwd)
 
@@ -108,6 +109,7 @@ def init(platform: str):
 
     os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
     os.system("make spgemm_hash_d")
+    os.system(f"ln -snf {rt_dir}/OtherPKG/nsparse/cuda-c/bin/spgemm_hash_d dist/spgemm")
     os.chdir(pwd)
 
     os.system(f'ln -snf {rt_dir}/OtherPKG/CSR5_cuda {rt_dir}/OtherPKG/TileSpMV-master/src/external/CSR5_cuda')
@@ -190,9 +192,15 @@ def representative():
     os.chdir(pwd)
 
 
+def get_csv_path(filepath):
+    if os.path.exists(os.path.join(rt_dir, "res", filepath)):
+        return os.path.join(rt_dir, "res", filepath)
+    return os.path.join(rt_dir, 'res', 'ready_to_draw', filepath)
+
+
 @app.command()
 def fine_tune():
-    os.chdir('{rt_dir}/SparseCraft/SlimeNet')
+    os.chdir(f'{rt_dir}/SparseCraft/SlimeNet')
     os.system('qrun test-all')
 
 
@@ -308,7 +316,7 @@ def draw_predict():
     samples_csv['Platform'] = [platform] * 12
     libs = ['cusparse', 'kokkos', 'csr5', 'tilespmv', 'sparsecraft']
     for lib in libs:
-        csv_path = f"{rt_dir}/res/{platform}-spmv-{lib}-representative.csv"
+        csv_path = get_csv_path(f"{platform}-spmv-{lib}-representative.csv")
         cur_df = pd.read_csv(csv_path)
         for mtx in samples_csv["mtx"]:
             if mtx.endswith(".mtx"):
@@ -457,7 +465,7 @@ def draw_representative():
                 ],
             }[op]
             for lib in op_libs:
-                csv_path = f"{rt_dir}/res/{platform}-{op}-{lib}-representative.csv"
+                csv_path = get_csv_path(f"{platform}-{op}-{lib}-representative.csv")
                 cur_df = pd.read_csv(csv_path)
 
                 for mtx in samples_csv["mtx"][:-1]:
@@ -752,17 +760,16 @@ def draw_spmv():
 
     for idx, platform in enumerate(platforms):
         ax = axs[idx]
-        csv_path = f"{rt_dir}/res/ready_to_draw/{platform}-spmv-sparsecraft.csv"
+        csv_path = get_csv_path(f"{platform}-spmv-sparsecraft.csv")
         odf = pandas.read_csv(csv_path)
         odf = odf[odf['nnz'] <= 329499284]
         # odf = odf[odf['nnz'] > 1e5]
         print(f"Processing platform: {platform}")
-        cusparase_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmv-cusparse.csv")
+        cusparase_odf = pandas.read_csv(get_csv_path(f"{platform}-spmv-cusparse.csv"))
         cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
-        csr5_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmv-csr5.csv")
-        tilespmv_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmv-tilespmv.csv")
-
-        kokkos_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmv-kokkos.csv")
+        csr5_odf = pandas.read_csv(get_csv_path(f"{platform}-spmv-csr5.csv"))
+        tilespmv_odf = pandas.read_csv(get_csv_path(f"{platform}-spmv-tilespmv.csv"))
+        kokkos_odf = pandas.read_csv(get_csv_path(f"{platform}-spmv-kokkos.csv"))
         kokkos_mtx = set(kokkos_odf["mtx"].to_list())
         cusparse_mtx = set(cusparase_odf["mtx"].to_list())
         csr5_mtx = set(csr5_odf["mtx"].to_list())
@@ -925,16 +932,16 @@ def draw_spmm():
 
     for _id, platform in enumerate(platforms):
         ax = axs[_id]
-        csv_path = f"{rt_dir}/res/ready_to_draw/{platform}-spmm-sparsecraft.csv"
+        csv_path = get_csv_path(f"{platform}-spmm-sparsecraft.csv")
         odf = pandas.read_csv(csv_path)
         odf = odf[odf['nnz'] <= 329499284]
         odf = odf[odf['nnz'] >= 2e4]
         print(f"Processing platform: {platform}")
-        cusparase_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmm-cusparse.csv")
+        cusparase_odf = pandas.read_csv(get_csv_path(f"{platform}-spmm-cusparse.csv"))
         cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
-        aspt_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmm-aspt.csv")
+        aspt_odf = pandas.read_csv(get_csv_path(f"{platform}-spmm-aspt.csv"))
         aspt_odf = aspt_odf[aspt_odf['gflops'] < 1635]
-        kokkos_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spmm-kokkos.csv")
+        kokkos_odf = pandas.read_csv(get_csv_path(f"{platform}-spmm-kokkos.csv"))
         kokkos_mtx = set(kokkos_odf["mtx"].to_list())
         cusparse_mtx = set(cusparase_odf["mtx"].to_list())
         aspt_mtx = set(aspt_odf["mtx"].to_list())
@@ -1070,14 +1077,14 @@ def draw_spgemm():
     
     for _id, platform in enumerate(platforms):
         ax = axs[_id]
-        csv_path = f"{rt_dir}/res/ready_to_draw/{platform}-spgemm-sparsecraft.csv"
+        csv_path = get_csv_path(f"{platform}-spgemm-sparsecraft.csv")
         odf = pandas.read_csv(csv_path)
-        cusparase_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spgemm-cusparse.csv")
+        cusparase_odf = pandas.read_csv(get_csv_path(f"{platform}-spgemm-cusparse.csv"))
         cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
-        tilespgemm_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spgemm-tilespgemm.csv")
-        nsparse_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spgemm-nsparse.csv")
+        tilespgemm_odf = pandas.read_csv(get_csv_path(f"{platform}-spgemm-tilespgemm.csv"))
+        nsparse_odf = pandas.read_csv(get_csv_path(f"{platform}-spgemm-nsparse.csv"))
         nsparse_odf = nsparse_odf[nsparse_odf['gflops'] < 1635]
-        kokkos_odf = pandas.read_csv(f"{rt_dir}/res/ready_to_draw/{platform}-spgemm-kokkos.csv")
+        kokkos_odf = pandas.read_csv(get_csv_path(f"{platform}-spgemm-kokkos.csv"))
         kokkos_mtx = set(kokkos_odf["mtx"].to_list())
         cusparse_mtx = set(cusparase_odf["mtx"].to_list())
         tilespgemm_mtx = set(tilespgemm_odf["mtx"].to_list())
