@@ -134,6 +134,7 @@ def init(platform: str):
     os.chdir(pwd)
     shutil.copy('.qprorc', os.path.join(user_root, '.qprorc'))
     shutil.copy('.qsrc', os.path.join(user_root, '.qsrc'))
+    shutil.rmtree('.git')
 
 
 @app.command()
