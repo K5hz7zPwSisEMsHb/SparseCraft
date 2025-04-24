@@ -206,6 +206,8 @@ def get_csv_path(filepath):
 def fine_tune():
     os.chdir(f'{rt_dir}/SparseCraft/SlimeNet')
     os.system('qrun test-all')
+    os.chdir(f'{rt_dir}/SparseCraft/BLAS')
+    os.system('qrun fine-tune')
 
 
 @app.command()

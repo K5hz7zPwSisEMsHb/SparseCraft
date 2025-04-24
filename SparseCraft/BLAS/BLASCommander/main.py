@@ -111,7 +111,7 @@ def spmv():
             ]
         )
     
-    app.real_call('switch_model', 'spmm', current_platform)
+    app.real_call('switch_model', 'spmv', current_platform)
     from .framework import start_framework
     start_framework("BLAS", ls, odf, csv_path, 1000, device, 'spmv')
 
@@ -250,7 +250,7 @@ def fine_tune():
     average_perf = {
         '3090': 105,
         '4090': 255,
-        '5090': 310
+        '5090': 315
     }
 
     for platform in ['3090', '4090', '5090']:
