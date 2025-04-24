@@ -11,7 +11,7 @@ NVCC_FLAGS = -O3 -w -arch=compute_61 -code=sm_120 -gencode=arch=compute_61,code=
 CUDA_INSTALL_PATH = /usr/local/cuda-12.8
 
 #includes
-INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I/root/OtherPKG/NVIDIA_CUDA-11.1_Samples/common/inc
+INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I../../NVIDIA_CUDA-11.1_Samples/common/inc
 
 CUDA_LIBS = -L$(CUDA_INSTALL_PATH)/lib64  -lcudart
 LIBS = $(CUDA_LIBS)

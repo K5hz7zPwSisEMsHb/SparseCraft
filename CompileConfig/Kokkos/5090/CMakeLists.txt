@@ -8,9 +8,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(Kokkos_ARCH_BLACKWELL120 ON)
 
 # 查找Kokkos和Kokkos Kernels安装路径
-find_package(Kokkos REQUIRED)
+find_package(Kokkos 
+    PATHS pkg/kokkos/install
+    NO_DEFAULT_PATH
+    REQUIRED)
 
-find_package(KokkosKernels REQUIRED)
+find_package(KokkosKernels 
+    PATHS pkg/kokkos-kernels/install
+    NO_DEFAULT_PATH
+    REQUIRED)
 
 include_directories(include)
 
