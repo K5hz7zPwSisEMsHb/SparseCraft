@@ -121,6 +121,12 @@ def init(platform: str):
     os.system("make")
     os.chdir(pwd)
 
+    os.chdir('Utils')
+    os.system('tar -xf 7z2409-linux-x64.tar.xz')
+    os.chdir(pwd)
+    os.chdir('SparseCraft')
+    os.system('../Utils/7zz x Matrices.7z')
+
 
 @app.command()
 def representative():
