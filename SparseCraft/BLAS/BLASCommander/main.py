@@ -158,7 +158,7 @@ def spgemm(device: int = 0):
     """
     import pandas
 
-    with open('/root/.CURRENT_PLATFORM', 'r') as f:
+    with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device = info.split()
 
