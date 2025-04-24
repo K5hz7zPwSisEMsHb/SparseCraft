@@ -1,3 +1,0 @@
-/root/OtherPKG/kokkos-test/build/CMakeFiles/kokkos_test.dir
-/root/OtherPKG/kokkos-test/build/CMakeFiles/edit_cache.dir
-/root/OtherPKG/kokkos-test/build/CMakeFiles/rebuild_cache.dir
