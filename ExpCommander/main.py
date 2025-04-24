@@ -128,6 +128,10 @@ def init(platform: str):
     os.chdir(pwd)
     os.chdir('SparseCraft')
     os.system('../Utils/7zz x Matrices.7z')
+    os.chdir(pwd)
+    os.chdir('res')
+    os.system('../Utils/7zz x ready_to_draw.7z')
+    os.chdir(pwd)
 
 
 @app.command()
