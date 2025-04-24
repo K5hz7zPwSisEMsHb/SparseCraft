@@ -123,7 +123,6 @@ def samples(opt: str):
         start_framework("cusparse_test", ls, odf, csv_path, right_n, device_id, f"--{opt}")
     else:
         start_framework("cusparse_test", ls, odf, csv_path, device_id, f"--{opt}")
-    odf = pd.read_csv(csv_path)
 
 
 def main():

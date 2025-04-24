@@ -12,7 +12,7 @@ if enable_config:
 import sys
 from QuickProject import user_pip, _ask, external_exec, QproDefaultStatus
 
-mtx_dir_path = '/root/SparseCraft/Matrices'
+mtx_dir_path = '../../../SparseCraft/Matrices'
 
 def requirePackage(
     pname: str,

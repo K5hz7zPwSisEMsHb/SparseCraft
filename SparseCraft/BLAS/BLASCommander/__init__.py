@@ -6,7 +6,7 @@ import sys
 import os
 from QuickProject import user_pip, _ask, external_exec, get_config, QproDefaultConsole, user_lang, QproInfoString
 
-mtx_dir_path = '/root/SparseCraft/Matrices'
+mtx_dir_path = '../../SparseCraft/Matrices'
 
 def requirePackage(
     pname: str,
