@@ -309,6 +309,16 @@ def spgemm():
     os.chdir(pwd)
 
 
+@app.command()
+def extract():
+    src_file = os.path.join(rt_dir, 'matrix.7z')
+    if os.path.exists(src_file):
+        import shutil
+
+        os.system(f'./Utils/7zz x {src_file}')
+        os.system(f'mv matrix/* {rt_dir}/SparseCraft/Matrices')
+
+
 def draw_predict():
     import pandas as pd
 

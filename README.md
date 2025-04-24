@@ -40,10 +40,11 @@ Before you start, you need to have the cuda 12.8 and Python^3.8 environments con
 
 3. (L2 Task, 1 day) With this level of tasks, you can reproduce Figure 7, Figure 8, and Figure 9.
 
-   1. Download the matrix set: `qrun download-matrices`. If this step is successful, you can find 2853 matrix files in the `SparseCraft/Matrices` directory.
-   2. Generate Figure 7 data: `qrun spmv`
-   3. Generate Figure 8 data: `qrun spmm`
-   4. Generate Figure 9 data: `qrun spgemm`
+   1. Download the [matrix set](https://drive.google.com/file/d/1Pp3BBOvU8nGoB12bb4o3wZs41twiXwXM/view?usp=drive_link)
+   2. Move the `matrix.7z` to project root directory, and execute: `qrun extract`
+   3. Generate Figure 7 data: `qrun spmv`
+   4. Generate Figure 8 data: `qrun spmm`
+   5. Generate Figure 9 data: `qrun spgemm`
 
 4. If your GPUs are distributed across multiple machines, you will need to manually aggregate the intermediate results generated in the res directory. Then you can reproduce the charts using the following command. For your convenience, we also provide complete test results in the artifacts (`res/ready_to_draw`). We defaultly use the intermediate results in the `res` directory for drawing. When the result file is incomplete, we automatically use the results in `res/ready_to_draw`, so you can get complete charts display after verification on any GPU platform.
 
