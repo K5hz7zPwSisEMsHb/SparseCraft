@@ -45,11 +45,11 @@ Before you start, you need to have the cuda 12.8 and Python^3.8 environments con
    3. Generate Figure 8 data: `qrun spmm`
    4. Generate Figure 9 data: `qrun spgemm`
 
-4. If your GPUs are distributed across multiple machines, you will need to manually aggregate the intermediate results generated in the res directory. For your convenience, we have provided complete test results in the artifact (`res/ready_to_draw`). These precomputed results allow you to reproduce the charts using the following command, even if your hardware specifications do not match the requirements stated in the artifact.
+4. If your GPUs are distributed across multiple machines, you will need to manually aggregate the intermediate results generated in the res directory. Then you can reproduce the charts using the following command. For your convenience, we also provide complete test results in the artifacts (`res/ready_to_draw`). We defaultly use the intermediate results in the `res` directory for drawing. When the result file is incomplete, we automatically use the results in `res/ready_to_draw`, so you can get complete charts display after verification on any GPU platform.
 
    1. Draw Figure 6: `qrun draw-figure 6`
-   2. Draw Figure 6: `qrun draw-figure 7`
-   3. Draw Figure 6: `qrun draw-figure 8`
-   4. Draw Figure 6: `qrun draw-figure 9`
-   5. Draw Figure 6: `qrun draw-figure 10`
+   2. Draw Figure 7: `qrun draw-figure 7`
+   3. Draw Figure 8: `qrun draw-figure 8`
+   4. Draw Figure 9: `qrun draw-figure 9`
+   5. Draw Figure 10: `qrun draw-figure 10`
 
