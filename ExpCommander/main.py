@@ -4,6 +4,12 @@ from . import *
 
 app = Commander(executable_name)
 
+def init_reset_build(path):
+    if os.path.exists(path) and os.path.isdir(path):
+        if os.path.exists(os.path.join(path, "CMakeCache.txt")):
+            os.remove(os.path.join(path, "CMakeCache.txt"))
+    else:
+        os.mkdir(path)
 
 @app.command()
 def init(platform: str):
@@ -40,7 +46,7 @@ def init(platform: str):
         f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
     )
     os.chdir(f"{sparsecraft_dir}/BLAS")
-    os.remove("dist/CMakeCache.txt")
+    init_reset_build("dist")
     os.system("qrun compile")
     os.chdir(pwd)
 
@@ -48,7 +54,7 @@ def init(platform: str):
         f"ln -snf {compile_file_dir}/SparseCraft/DataGen/{platform}/CMakeLists.txt {sparsecraft_dir}/DataGen/CMakeLists.txt"
     )
     os.chdir(f"{sparsecraft_dir}/DataGen")
-    os.remove("dist/CMakeCache.txt")
+    init_reset_build("dist")
     os.system("qrun compile")
     os.chdir(pwd)
 
@@ -65,7 +71,7 @@ def init(platform: str):
         f"ln -snf {compile_file_dir}/cuSPARSE/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/cusparse-test/CMakeLists.txt"
     )
     os.chdir(f"{rt_dir}/OtherPKG/cusparse-test")
-    os.remove("build/CMakeCache.txt")
+    init_reset_build("build")
     os.system("qrun compile")
     os.chdir(pwd)
 
@@ -79,22 +85,24 @@ def init(platform: str):
     os.chdir("build")
     arch = {"3090": "AMPERE86", "4090": "ADA89", "5090": "BLACKWELL120"}[platform]
     os.system(
-        f"cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_{arch}=ON"
+        f"cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_{arch}=ON -DCMAKE_INSTALL_PREFIX=../install"
     )
     os.system("make -j")
     os.system("make install")
+    os.system('make clean')
     os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos-kernels")
     if os.path.exists("build"):
         shutil.rmtree("build")
     os.mkdir("build")
     os.chdir("build")
     os.system(
-        "cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF .."
+        "cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../install .."
     )
     os.system("make -j8")
     os.system("make install")
+    os.system('make clean')
     os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    os.remove("build/CMakeCache.txt")
+    init_reset_build("build")
     os.system("qrun compile")
     os.chdir(pwd)
 
@@ -102,6 +110,7 @@ def init(platform: str):
     os.system("make spgemm_hash_d")
     os.chdir(pwd)
 
+    os.system(f'ln -snf {rt_dir}/OtherPKG/CSR5_cuda {rt_dir}/OtherPKG/TileSpMV-master/src/external/CSR5_cuda')
     os.system(f'ln -snf {compile_file_dir}/TileSpMV/{platform}/Makefile {rt_dir}/OtherPKG/TileSpMV-master/src/Makefile')
     os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
     os.system("make")
