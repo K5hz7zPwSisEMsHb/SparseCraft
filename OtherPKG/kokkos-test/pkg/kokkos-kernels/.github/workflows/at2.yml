@@ -1,0 +1,45 @@
+name: github-AT2
+
+on: 
+  pull_request:
+    paths-ignore:
+    - '**/*.rst'
+    - '**/*.md'
+    - '**/requirements.txt'
+    - '**/*.py'
+    - 'docs/**'
+    types: [ opened, reopened, synchronize ]
+
+permissions:
+  contents: none
+
+# Cancels any in progress 'workflow' associated with this PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KOKKOS_VERSION: 4.5.00
+
+jobs:
+  mi210:
+    uses: ./.github/workflows/mi210.yml
+    with:
+      kokkos_version: 4.5.00
+  h100:
+    uses: ./.github/workflows/h100.yml
+    with:
+      kokkos_version: 4.5.00
+  bdw:
+    uses: ./.github/workflows/bdw.yml
+    with:
+      kokkos_version: 4.5.00
+  spr:
+    uses: ./.github/workflows/spr.yml
+    with:
+      kokkos_version: 4.5.00
+  # All these ran on sogpu01, which has been repurposed
+  # volta70:
+  #   uses: ./.github/workflows/volta70.yml
+  #   with:
+  #     kokkos_version: 4.5.00
