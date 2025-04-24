@@ -113,7 +113,7 @@ def spmv():
     
     app.real_call('switch_model', 'spmm', current_platform)
     from .framework import start_framework
-    start_framework("spmv", ls, odf, csv_path, 1000, device, 'spmv')
+    start_framework("BLAS", ls, odf, csv_path, 1000, device, 'spmv')
 
 
 @app.command()
@@ -148,7 +148,7 @@ def spmm(right_n: int = 8, device: int = 0):
 
     app.real_call('switch_model', 'spmm', current_platform)
     from .framework import start_framework
-    start_framework("spmm", ls, odf, csv_path, 1000, right_n, device, "spmm")
+    start_framework("BLAS", ls, odf, csv_path, 1000, right_n, device, "spmm")
 
 
 @app.command()
@@ -183,7 +183,7 @@ def spgemm(device: int = 0):
     
     app.real_call('switch_model', 'spmm', current_platform)
     from .framework import start_framework
-    start_framework("spgemm", ls, odf, csv_path, 100, device, 'spgemm')
+    start_framework("BLAS", ls, odf, csv_path, 100, device, 'spgemm')
 
 
 @app.command()
