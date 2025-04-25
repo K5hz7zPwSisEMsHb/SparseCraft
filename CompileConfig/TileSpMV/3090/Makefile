@@ -8,7 +8,7 @@ MAT_VAL_TYPE = double
 NVCC_FLAGS = -O3 -w -arch=compute_61 -code=sm_86 -gencode=arch=compute_61,code=sm_86
 
 #ENVIRONMENT_PARAMETERS
-CUDA_INSTALL_PATH = /usr/local/cuda-12.8
+CUDA_INSTALL_PATH = /usr/local/cuda
 
 #includes
 INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I../../NVIDIA_CUDA-11.1_Samples/common/inc

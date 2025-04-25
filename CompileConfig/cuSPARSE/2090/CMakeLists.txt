@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
-set(CUDA_ARCHITECTURES 120)
+set(CUDA_ARCHITECTURES 75)
 set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 set(CMAKE_CUDA_COMPILER "${CUDA_TOOLKIT_ROOT_DIR}/bin/nvcc")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${CUDA_ARCHITECTURES},code=sm_${CUDA_ARCHITECTURES} -ccbin /usr/bin -m64 -Xcompiler -fopenmp -Xcompiler -fopenmp-simd  -g")

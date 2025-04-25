@@ -90,20 +90,22 @@ def compile_test_only(debug: bool = False):
 
 
 @app.command()
-def run(platform: str):
+def run(platform: str, base_path: str = ''):
     """
     🏃 Run Training
 
-    :param platform: GPU Platform (3090/4090/5090)
+    :param platform: GPU Platform
     """
-    if platform not in ['3090', '4090', '5090']:
-        QproDefaultConsole.print(f"Error: Unsupported platform {platform}, please use 3090/4090/5090")
-        return
-    
-    base_path = f"data/{platform}"
-    train_path = f"{base_path}/train"
-    test_path = f"{base_path}/test"
-    model_path = f"model/{platform}_more/model.bin"
+    if not base_path:
+        base_path = f"data/{platform}"
+        train_path = f"{base_path}/train"
+        test_path = f"{base_path}/test"
+    else:
+        train_path = base_path
+        test_path = base_path
+    if not os.path.exists(f'model/{platform}'):
+        os.makedirs(f'model/{platform}')
+    model_path = f"model/{platform}/{platform}_model.bin"
     
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     
@@ -168,23 +170,26 @@ def _run_single_test(test_args):
     
     # If test succeeded and has output
     if not st and ct:
-        # Extract accuracy
-        match = re.search(r"accuracy: ([\d.]+)%", ct)
-        if match:
-            accuracy = match.group(1)
-            model_name = os.path.basename(model_path)
-            source_platform = model_name.split('_')[0]
-            model_type = "fine-tuned" if "fine_model" in model_name else "native"
-            
-            # Build explanation text
-            if model_type == "fine-tuned":
-                QproDefaultConsole.print(
-                    f"[Explanation] This is the test result of {source_platform} platform model fine-tuned for {test_platform} platform, tested on {test_platform}'s test set"
-                )
-            else:
-                QproDefaultConsole.print(
-                    f"[Explanation] This is the test result of {source_platform} platform's native model tested on {test_platform}'s test set"
-                )
+        # Extract accuracy and performance
+        acc_match = re.search(r"accuracy: ([\d.]+)%", ct)
+        perf_match = re.search(r"performance: ([\d.]+)", ct)
+        
+        accuracy = acc_match.group(1) if acc_match else "N/A"
+        performance = perf_match.group(1) if perf_match else "N/A"
+        
+        model_name = os.path.basename(model_path)
+        source_platform = model_name.split('_')[0]
+        model_type = "fine-tuned" if "fine_model" in model_name else "native"
+        
+        # Build explanation text
+        if model_type == "fine-tuned":
+            QproDefaultConsole.print(
+                f"[Explanation] This is the test result of {source_platform} platform model fine-tuned for {test_platform} platform, tested on {test_platform}'s test set"
+            )
+        else:
+            QproDefaultConsole.print(
+                f"[Explanation] This is the test result of {source_platform} platform's native model tested on {test_platform}'s test set"
+            )
     
     return st, ct
 
@@ -220,28 +225,47 @@ def test_all():
         phase1_table.add_column(platform, style="cyan")
     
     # 构建并填充 Phase 1 矩阵
-    phase1_results_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    phase1_acc_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    phase1_perf_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    
     for i, (test_platform, model_path, _) in enumerate(phase1_tasks):
         status, output = phase1_results[i]
         model_platform = os.path.basename(model_path).split('_')[0]
         
-        accuracy = "N/A"
         if not status and output:
-            match = re.search(r"accuracy: ([\d.]+)%", output)
-            if match:
-                accuracy = f"{match.group(1)}%"
-        phase1_results_matrix[model_platform][test_platform] = accuracy
+            acc_match = re.search(r"accuracy: ([\d.]+)%", output)
+            perf_match = re.search(r"performance: ([\d.]+)", output)
+            
+            accuracy = f"{acc_match.group(1)}%" if acc_match else "N/A"
+            performance = f"{perf_match.group(1)}" if perf_match else "N/A"
+            
+            phase1_acc_matrix[model_platform][test_platform] = accuracy
+            phase1_perf_matrix[model_platform][test_platform] = performance
+
+    # 创建并显示准确率和性能表格
+    phase1_acc_table = Table(title="Phase 1 - Native Models Cross-platform Accuracy")
+    phase1_perf_table = Table(title="Phase 1 - Native Models Cross-platform Performance")
     
-    # 输出 Phase 1 矩阵
+    for table in [phase1_acc_table, phase1_perf_table]:
+        table.add_column("Model↓ Test→", style="bold")
+        for platform in platforms:
+            table.add_column(platform, style="cyan")
+    
+    # 填充表格
     for model_platform in platforms:
-        row = [model_platform]
+        acc_row = [model_platform]
+        perf_row = [model_platform]
         for test_platform in platforms:
-            row.append(phase1_results_matrix[model_platform][test_platform])
-        phase1_table.add_row(*row)
+            acc_row.append(phase1_acc_matrix[model_platform][test_platform])
+            perf_row.append(phase1_perf_matrix[model_platform][test_platform])
+        phase1_acc_table.add_row(*acc_row)
+        phase1_perf_table.add_row(*perf_row)
     
     QproDefaultConsole.print("\nPhase 1 Summary:")
-    QproDefaultConsole.print(phase1_table)
-    
+    QproDefaultConsole.print(phase1_acc_table)
+    QproDefaultConsole.print("\n")
+    QproDefaultConsole.print(phase1_perf_table)
+
     # Phase 2: Testing fine-tuned models on their target platforms
     QproDefaultConsole.print("\nPhase 2: Testing fine-tuned models on target platforms")
     for platform in platforms:
@@ -270,51 +294,68 @@ def test_all():
         phase2_results = list(executor.map(_run_single_test, phase2_tasks))
     
     # 创建最终总结表格
-    final_phase1_table = Table(title="Final Summary - Phase 1: Native Models Cross-platform Performance")
-    final_phase1_table.add_column("Model↓ Test→", style="bold")
-    for platform in platforms:
-        final_phase1_table.add_column(platform, style="cyan")
-    
-    final_phase2_table = Table(title="Final Summary - Phase 2: Fine-tuned Models Performance")
-    final_phase2_table.add_column("Model↓ Test→", style="bold")
-    for platform in platforms:
-        final_phase2_table.add_column(platform, style="cyan")
-    
+    final_phase1_acc_table = Table(title="Final Summary - Phase 1: Native Models Cross-platform Accuracy")
+    final_phase1_perf_table = Table(title="Final Summary - Phase 1: Native Models Cross-platform Performance")
+    final_phase2_acc_table = Table(title="Final Summary - Phase 2: Fine-tuned Models Accuracy")
+    final_phase2_perf_table = Table(title="Final Summary - Phase 2: Fine-tuned Models Performance")
+
+    for table in [final_phase1_acc_table, final_phase1_perf_table, final_phase2_acc_table, final_phase2_perf_table]:
+        table.add_column("Model↓ Test→", style="bold")
+        for platform in platforms:
+            table.add_column(platform, style="cyan")
+
     # 复用之前的 Phase 1 结果
     for model_platform in platforms:
-        row = [model_platform]
+        acc_row = [model_platform]
+        perf_row = [model_platform]
         for test_platform in platforms:
-            row.append(phase1_results_matrix[model_platform][test_platform])
-        final_phase1_table.add_row(*row)
-    
+            acc_row.append(phase1_acc_matrix[model_platform][test_platform])
+            perf_row.append(phase1_perf_matrix[model_platform][test_platform])
+        final_phase1_acc_table.add_row(*acc_row)
+        final_phase1_perf_table.add_row(*perf_row)
+
     # 填充 Phase 2 表格
-    phase2_results_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    phase2_acc_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    phase2_perf_matrix = {model: {test: "N/A" for test in platforms} for model in platforms}
+    
     for i, (test_platform, model_path, _) in enumerate(phase2_tasks):
         status, output = phase2_results[i]
         model_name = os.path.basename(model_path)
         source_platform = model_name.split('_')[0]
         
-        accuracy = "N/A"
         if not status and output:
-            match = re.search(r"accuracy: ([\d.]+)%", output)
-            if match:
-                accuracy = f"{match.group(1)}%"
-        if "fine_model" in model_name:
-            accuracy = f"[blue]{accuracy}[/blue]"
-        phase2_results_matrix[source_platform][test_platform] = accuracy
-    
+            acc_match = re.search(r"accuracy: ([\d.]+)%", output)
+            perf_match = re.search(r"performance: ([\d.]+)", output)
+            
+            accuracy = f"{acc_match.group(1)}%" if acc_match else "N/A"
+            performance = perf_match.group(1) if perf_match else "N/A"
+            
+            if "fine_model" in model_name:
+                accuracy = f"[blue]{accuracy}[/blue]"
+                performance = f"[blue]{performance}[/blue]"
+                
+            phase2_acc_matrix[source_platform][test_platform] = accuracy
+            phase2_perf_matrix[source_platform][test_platform] = performance
+
     # 输出 Phase 2 矩阵
     for source_platform in platforms:
-        row = [source_platform]
+        acc_row = [source_platform]
+        perf_row = [source_platform]
         for test_platform in platforms:
-            row.append(phase2_results_matrix[source_platform][test_platform])
-        final_phase2_table.add_row(*row)
-    
+            acc_row.append(phase2_acc_matrix[source_platform][test_platform])
+            perf_row.append(phase2_perf_matrix[source_platform][test_platform])
+        final_phase2_acc_table.add_row(*acc_row)
+        final_phase2_perf_table.add_row(*perf_row)
+
     # 显示最终总结
     QproDefaultConsole.print("\nFinal Summary:")
-    QproDefaultConsole.print(final_phase1_table)
+    QproDefaultConsole.print(final_phase1_acc_table)
     QproDefaultConsole.print("\n")
-    QproDefaultConsole.print(final_phase2_table)
+    QproDefaultConsole.print(final_phase1_perf_table)
+    QproDefaultConsole.print("\n")
+    QproDefaultConsole.print(final_phase2_acc_table)
+    QproDefaultConsole.print("\n")
+    QproDefaultConsole.print(final_phase2_perf_table)
     
     # 添加图例说明
     QproDefaultConsole.print("\n[bold]Legend:[/bold]")

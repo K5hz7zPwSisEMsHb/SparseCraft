@@ -8,7 +8,7 @@ NUM_RUN = 1000
 
 #CUDA_PARAMETERS
 NVCC_FLAGS = -O3  -w -m64 -gencode=arch=compute_86,code=sm_86 -gencode=arch=compute_86,code=sm_86
-CUDA_INSTALL_PATH = /usr/local/cuda-12.8
+CUDA_INSTALL_PATH = /usr/local/cuda
 CUDA_INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I../NVIDIA_CUDA-11.1_Samples/common/inc
 CUDA_LIBS = -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 

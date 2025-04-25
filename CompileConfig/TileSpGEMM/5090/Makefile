@@ -12,7 +12,7 @@ NVCC_FLAGS = -O3 -w -arch=compute_61 -code=sm_120 -gencode=arch=compute_61,code=
 #-Xcompiler -Wall -D_FORCE_INLINES -DVERBOSE --expt-extended-lambda -use_fast_math --expt-relaxed-constexpr
 
 #ENVIRONMENT_PARAMETERS
-CUDA_INSTALL_PATH = /usr/local/cuda-12.8
+CUDA_INSTALL_PATH = /usr/local/cuda
 
 #includes
 INCLUDES = -I$(CUDA_INSTALL_PATH)/include

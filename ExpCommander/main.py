@@ -20,11 +20,14 @@ def init(platform: str):
     """
     import shutil
 
-    if platform not in ["3090", "4090", "5090"]:
+    if platform not in ["2090", "3090", "4090", "5090"]:
         QproDefaultConsole.print(
-            QproErrorString, f"Invalid platform: {platform}, must be 3090, 4090 or 5090"
+            QproErrorString, f"Invalid platform: {platform}, must be 2090, 3090, 4090 or 5090"
         )
         return
+    if platform == "2090":
+        from QuickProject import QproWarnString
+        QproDefaultConsole.print(QproWarnString, "2090 is only supported for SparseCraft and cuSPARSE")
 
     from . import _ask
 
@@ -58,16 +61,6 @@ def init(platform: str):
     os.system("qrun compile")
     os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM")
-    os.system(f'ln -snf {rt_dir}/CompileConfig/ASpT/{platform}/compile_GPU_SpMM_ASpT.sh compile_GPU_SpMM_ASpT.sh')
-    os.system("./compile_GPU_SpMM_ASpT.sh")
-    os.chdir(pwd)
-
-    os.system(f'ln -snf {compile_file_dir}/CSR5/{platform}/Makefile {rt_dir}/OtherPKG/CSR5_cuda/Makefile')
-    os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
-    os.system("make")
-    os.chdir(pwd)
-
     os.system(
         f"ln -snf {compile_file_dir}/cuSPARSE/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/cusparse-test/CMakeLists.txt"
     )
@@ -77,53 +70,64 @@ def init(platform: str):
     os.system("qrun compile")
     os.chdir(pwd)
 
-    os.system(
-        f"ln -snf {compile_file_dir}/Kokkos/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/kokkos-test/CMakeLists.txt"
-    )
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos")
-    if os.path.exists("build"):
-        shutil.rmtree("build")
-    os.mkdir("build")
-    os.chdir("build")
-    arch = {"3090": "AMPERE86", "4090": "ADA89", "5090": "BLACKWELL120"}[platform]
-    os.system(
-        f"cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_{arch}=ON -DCMAKE_INSTALL_PREFIX=../install"
-    )
-    os.system("make -j")
-    os.system("make install")
-    os.system('make clean')
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos-kernels")
-    if os.path.exists("build"):
-        shutil.rmtree("build")
-    os.mkdir("build")
-    os.chdir("build")
-    os.system(
-        "cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../install .."
-    )
-    os.system("make -j8")
-    os.system("make install")
-    os.system('make clean')
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    init_reset_build("build")
-    os.mkdir('dist')
-    os.system("qrun compile")
-    os.chdir(pwd)
+    if platform != '2090':
+        os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM")
+        os.system(f'ln -snf {rt_dir}/CompileConfig/ASpT/{platform}/compile_GPU_SpMM_ASpT.sh compile_GPU_SpMM_ASpT.sh')
+        os.system("./compile_GPU_SpMM_ASpT.sh")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
-    os.system("make spgemm_hash_d")
-    os.system(f"ln -snf {rt_dir}/OtherPKG/nsparse/cuda-c/bin/spgemm_hash_d dist/spgemm")
-    os.chdir(pwd)
+        os.system(f'ln -snf {compile_file_dir}/CSR5/{platform}/Makefile {rt_dir}/OtherPKG/CSR5_cuda/Makefile')
+        os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
+        os.system("make")
+        os.chdir(pwd)
 
-    os.system(f'ln -snf {rt_dir}/OtherPKG/CSR5_cuda {rt_dir}/OtherPKG/TileSpMV-master/src/external/CSR5_cuda')
-    os.system(f'ln -snf {compile_file_dir}/TileSpMV/{platform}/Makefile {rt_dir}/OtherPKG/TileSpMV-master/src/Makefile')
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
-    os.system("make")
-    os.chdir(pwd)
+        os.system(
+            f"ln -snf {compile_file_dir}/Kokkos/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/kokkos-test/CMakeLists.txt"
+        )
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos")
+        if os.path.exists("build"):
+            shutil.rmtree("build")
+        os.mkdir("build")
+        os.chdir("build")
+        arch = {"3090": "AMPERE86", "4090": "ADA89", "5090": "BLACKWELL120"}[platform]
+        os.system(
+            f"cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_{arch}=ON -DCMAKE_INSTALL_PREFIX=../install"
+        )
+        os.system("make -j")
+        os.system("make install")
+        os.system('make clean')
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos-kernels")
+        if os.path.exists("build"):
+            shutil.rmtree("build")
+        os.mkdir("build")
+        os.chdir("build")
+        os.system(
+            "cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../install .."
+        )
+        os.system("make -j8")
+        os.system("make install")
+        os.system('make clean')
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
+        init_reset_build("build")
+        os.mkdir('dist')
+        os.system("qrun compile")
+        os.chdir(pwd)
 
-    os.system(f'ln -snf {compile_file_dir}/TileSpGEMM/{platform}/Makefile {rt_dir}/OtherPKG/TileSpGEMM/src/Makefile')
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
-    os.system("make")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
+        os.system("make spgemm_hash_d")
+        os.system(f"ln -snf {rt_dir}/OtherPKG/nsparse/cuda-c/bin/spgemm_hash_d dist/spgemm")
+        os.chdir(pwd)
+
+        os.system(f'ln -snf {rt_dir}/OtherPKG/CSR5_cuda {rt_dir}/OtherPKG/TileSpMV-master/src/external/CSR5_cuda')
+        os.system(f'ln -snf {compile_file_dir}/TileSpMV/{platform}/Makefile {rt_dir}/OtherPKG/TileSpMV-master/src/Makefile')
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
+        os.system("make")
+        os.chdir(pwd)
+
+        os.system(f'ln -snf {compile_file_dir}/TileSpGEMM/{platform}/Makefile {rt_dir}/OtherPKG/TileSpGEMM/src/Makefile')
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
+        os.system("make")
+        os.chdir(pwd)
 
     os.chdir('Utils')
     os.system('tar -xf 7z2409-linux-x64.tar.xz')
@@ -137,6 +141,47 @@ def init(platform: str):
     shutil.copy('.qprorc', os.path.join(user_root, '.qprorc'))
     shutil.copy('.qsrc', os.path.join(user_root, '.qsrc'))
     shutil.rmtree('.git')
+
+
+@app.command()
+def pretrain():
+    with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
+        platform, device = f.read().strip().split()
+    
+    platform = '2090'
+    spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmm.bin'
+    spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmv.bin'
+    
+    if os.path.exists(spmm_model_target_path):
+        QproDefaultConsole.print("SpMM Model Already Exists")
+    else:
+        QproDefaultConsole.print("Start Generating SpMM Pretrain Data")
+        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+        os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-P.txt')
+        os.chdir("gen/spmm")
+        os.system(f"mv *.txt {platform}")
+        os.chdir(rt_dir)
+
+        QproDefaultConsole.print("Start Pretraining SpMM Model")
+        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
+        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin')
+        os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin {spmm_model_target_path}')
+    
+    if os.path.exists(spmv_model_target_path):
+        QproDefaultConsole.print("SpMV Model Already Exists")
+    else:
+        QproDefaultConsole.print("Start Generating SpMV Pretrain Data")
+        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+        os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-P.txt')
+        os.chdir("gen/spmv")
+        os.system(f"mv *.txt {platform}")
+        os.chdir(rt_dir)
+
+        QproDefaultConsole.print("Start Pretraining SpMV Model")
+        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
+        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin')
+        os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin {spmv_model_target_path}')
 
 
 @app.command()
