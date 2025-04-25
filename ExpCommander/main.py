@@ -179,6 +179,7 @@ def pretrain():
         os.chdir(rt_dir)
 
         QproDefaultConsole.print("Start Pretraining SpMV Model")
+        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
         os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
         os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin')
         os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin {spmv_model_target_path}')
