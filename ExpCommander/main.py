@@ -73,6 +73,7 @@ def init(platform: str):
     )
     os.chdir(f"{rt_dir}/OtherPKG/cusparse-test")
     init_reset_build("build")
+    os.mkdir('dist')
     os.system("qrun compile")
     os.chdir(pwd)
 
@@ -104,6 +105,7 @@ def init(platform: str):
     os.system('make clean')
     os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
     init_reset_build("build")
+    os.mkdir('dist')
     os.system("qrun compile")
     os.chdir(pwd)
 
