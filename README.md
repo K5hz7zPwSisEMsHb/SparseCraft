@@ -7,7 +7,7 @@ Before you start, you need to have the cuda 12.8 and Python^3.8 environments con
 1. Clone the repository:
 
    ```shell
-   git clone git@github.com:zxnvsvsbpxevmuxa/SparseCraft.git
+   git clone https://github.com/K5hz7zPwSisEMsHb/SparseCraft.git
    ```
 
 2. Install Python dependencies
