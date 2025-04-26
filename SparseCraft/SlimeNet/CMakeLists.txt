@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(slime_s)
+project(slime)
 
 # 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 11)
