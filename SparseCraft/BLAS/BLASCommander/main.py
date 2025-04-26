@@ -148,7 +148,7 @@ def spmm(right_n: int = 8, device: int = 0):
         current_platform, device = info.split()
 
     csv_path = f"dist/{current_platform}-spmm-sparsecraft.csv"
-    ls = pandas.read_csv('dist/odf/spmm-256.csv')["mtx"].to_list()
+    ls = [i for i in os.listdir(mtx_dir_path) if i.endswith(".mtx") and not i.startswith('_')]
     if os.path.exists(csv_path):
         odf = pandas.read_csv(csv_path)
         have_mtx = set(odf["mtx"].to_list())
