@@ -1,8 +1,27 @@
 from QuickProject.Commander import Commander
+from QuickProject import QproErrorString, QproWarnString
 from . import *
 
 
 app = Commander(name)
+
+def platform_check(platform: str):
+    continue_flag = False
+    platform_flag = None
+    for _idx, keywords in enumerate(['20', '30', '40', '50']):
+        if platform.startswith(keywords):
+            continue_flag = True
+            platform_flag = _idx
+            break
+
+    if not continue_flag:
+        QproDefaultConsole.print(QproErrorString, f"Invalid platform: {platform} is not supported.")
+        exit(1)
+
+    ln_platform = ["2090", "3090", "4090", "5090"][platform_flag]
+    if ln_platform == "2090":
+        QproDefaultConsole.print(QproWarnString, "20 series GPU is only supported for SparseCraft and cuSPARSE")
+    return ln_platform
 
 
 @app.command()
@@ -110,8 +129,9 @@ def spmv():
                 "pixel_gflops",
             ]
         )
-    
-    app.real_call('switch_model', 'spmv', current_platform)
+
+    ln_platform = platform_check(current_platform)
+    app.real_call('switch_model', 'spmv', ln_platform)
     from .framework import start_framework
     start_framework("BLAS", ls, odf, csv_path, 1000, device, 'spmv')
 
@@ -146,7 +166,8 @@ def spmm(right_n: int = 8, device: int = 0):
             ]
         )
 
-    app.real_call('switch_model', 'spmm', current_platform)
+    ln_platform = platform_check(current_platform)
+    app.real_call('switch_model', 'spmm', ln_platform)
     from .framework import start_framework
     start_framework("BLAS", ls, odf, csv_path, 1000, right_n, device, "spmm")
 
@@ -181,7 +202,8 @@ def spgemm(device: int = 0):
             ]
         )
     
-    app.real_call('switch_model', 'spmm', current_platform)
+    ln_platform = platform_check(current_platform)
+    app.real_call('switch_model', 'spmm', ln_platform)
     from .framework import start_framework
     start_framework("BLAS", ls, odf, csv_path, 100, device, 'spgemm')
 
