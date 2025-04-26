@@ -226,7 +226,7 @@ def fine_tune_new():
         if not os.path.exists(f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin'):
             QproDefaultConsole.print("Start generating SpMM fine-tuning data")
             os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-            os.makedirs('gen/spmm', exist_ok=True)
+            os.makedirs(f'gen/spmm/{platform}', exist_ok=True)
             os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
             os.chdir("gen/spmm")
             os.system(f"mv *.txt {platform}")
@@ -245,7 +245,7 @@ def fine_tune_new():
         if not os.path.exists(f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin'):
             QproDefaultConsole.print("Start generating SpMV fine-tuning data")
             os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-            os.makedirs('gen/spmv', exist_ok=True)
+            os.makedirs(f'gen/spmv/{platform}', exist_ok=True)
             os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
             os.chdir("gen/spmv")
             os.system(f"mv *.txt {platform}")
