@@ -214,43 +214,46 @@ def fine_tune_new():
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, device = f.read().strip().split()
     
-    model_src_path = f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin'
-    spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmm.bin'
-    spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmv.bin'
+    ln_platform = platform_check(platform)
+    model_src_path = f'{rt_dir}/SparseCraft/SlimeNet/model/{ln_platform}/model.bin'
+    spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{ln_platform}/spmm.bin'
+    spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{ln_platform}/spmv.bin'
     
     check_path_dir_exists_and_create(model_src_path)
     if os.path.exists(spmm_model_target_path):
         QproDefaultConsole.print("SpMM Model Already Exists")
     else:
         check_path_dir_exists_and_create(spmm_model_target_path)
-        QproDefaultConsole.print("Start generating SpMM fine-tuning data")
-        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-        os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
-        os.chdir("gen/spmm")
-        os.system(f"mv *.txt {platform}")
-        os.chdir(rt_dir)
+        if not os.path.exists(f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin'):
+            QproDefaultConsole.print("Start generating SpMM fine-tuning data")
+            os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+            os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+            os.chdir("gen/spmm")
+            os.system(f"mv *.txt {platform}")
+            os.chdir(rt_dir)
 
-        QproDefaultConsole.print("Start train SpMM Model")
-        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
-        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
-        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin')
+            QproDefaultConsole.print("Start train SpMM Model")
+            os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+            os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
+            os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin')
         os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin {spmm_model_target_path}')
     
     if os.path.exists(spmv_model_target_path):
         QproDefaultConsole.print("SpMV Model Already Exists")
     else:
         check_path_dir_exists_and_create(spmv_model_target_path)
-        QproDefaultConsole.print("Start generating SpMV fine-tuning data")
-        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-        os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
-        os.chdir("gen/spmv")
-        os.system(f"mv *.txt {platform}")
-        os.chdir(rt_dir)
+        if not os.path.exists(f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin'):
+            QproDefaultConsole.print("Start generating SpMV fine-tuning data")
+            os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+            os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+            os.chdir("gen/spmv")
+            os.system(f"mv *.txt {platform}")
+            os.chdir(rt_dir)
 
-        QproDefaultConsole.print("Start train SpMV Model")
-        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
-        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
-        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin')
+            QproDefaultConsole.print("Start train SpMV Model")
+            os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+            os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
+            os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin')
         os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin {spmv_model_target_path}')
 
     if not (os.path.exists(spmm_model_target_path) and os.path.exists(spmv_model_target_path)):
