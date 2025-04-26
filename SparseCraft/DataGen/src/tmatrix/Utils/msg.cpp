@@ -5,11 +5,11 @@
 #include <tmatrix/Utils/msg.h>
 
 const char *_msg_template[] = {
-    "[bold cyan][提示][/]",
-    "[bold red][错误][/]",
-    "[bold yellow][调试][/]",
-    "[bold green][成功][/]",
-    "[bold yellow][警告][/]",
+    "[bold cyan][INFO][/]",
+    "[bold red][ERRO][/]",
+    "[bold yellow][DBUG][/]",
+    "[bold green][SUCC][/]",
+    "[bold yellow][WARN][/]",
     "__TITLE__",
     "__RULE__",
     "__MARKDOWN__",
