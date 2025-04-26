@@ -216,6 +216,8 @@ def samples():
     with open('../../.CURRENT_PLATFORM', 'r') as f:
         info = f.read().strip()
         current_platform, device = info.split()
+    ln_platform = platform_check(current_platform)
+
     mtx = ['2430_mc2depi.mtx', '2453_pkustk07.mtx', '2305_msc10848.mtx', '2449_rma10.mtx', '2479_ramage02.mtx', '2412_opt1.mtx', '2420_TSC_OPF_1047.mtx', '2413_trdheim.mtx', '2148_heart3.mtx', '2200_nemeth19.mtx', '2340_raefsky3.mtx', '2634_TSOPF_RS_b678_c2.mtx']
     repeat = {
         'spmv': 1000,
@@ -231,7 +233,7 @@ def samples():
             'spmv': 'spmv',
             'spmm': 'spmm',
             'spgemm': 'spmm'
-        }[op], current_platform)
+        }[op], ln_platform)
         perf_ls = []
         right_n = '8' if op == 'spmm' else ''
         for mname in mtx:
@@ -275,8 +277,9 @@ def fine_tune():
         '5090': 315
     }
 
+    ln_platform = platform_check(current_platform)
     for platform in ['3090', '4090', '5090']:
-        if current_platform == platform:
+        if ln_platform == platform:
             raw_perfs.append(1.0)
             fine_perfs.append(1.0)
             continue
@@ -292,7 +295,7 @@ def fine_tune():
         raw_perf = round(sum(perf_ls) / len(perf_ls), 2)
         perf_ls = []
 
-        os.system(f"ln -snf \"{os.path.join(rt_dir, 'model/bin/fine-tune', current_platform, f'{platform}_model.bin')}\" {os.path.join(rt_dir, 'model/slime_net.bin')}")
+        os.system(f"ln -snf \"{os.path.join(rt_dir, 'model/bin/fine-tune', ln_platform, f'{platform}_model.bin')}\" {os.path.join(rt_dir, 'model/slime_net.bin')}")
         QproDefaultStatus.start()
         for mname in mtx:
             QproDefaultStatus(f"SparseCraft: {mname}")
@@ -303,8 +306,8 @@ def fine_tune():
         fine_tuned = round(sum(perf_ls) / len(perf_ls), 2)
         
         raw_perf, fine_tuned = min(raw_perf, fine_tuned), max(raw_perf, fine_tuned)
-        raw_perfs.append(round(raw_perf / average_perf[current_platform], 2))
-        fine_perfs.append(round(fine_tuned / average_perf[current_platform], 2))
+        raw_perfs.append(round(raw_perf / average_perf[ln_platform], 2))
+        fine_perfs.append(round(fine_tuned / average_perf[ln_platform], 2))
 
     QproDefaultConsole.print(raw_perfs, '-->', fine_perfs)
 
