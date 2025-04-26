@@ -558,9 +558,18 @@ def draw_predict():
     plt.savefig(output_path)
 
 
+def draw_other_check():
+    with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
+        platform, _ = f.read().strip().split()
+
+    if platform_check(platform) not in ['3090', '4090', '5090']:
+        QproDefaultConsole.print(QproWarnString, f"{platform} is not supported, but we can draw it for 3090, 4090 and 5090 platforms")
+
+
 def draw_representative():
     import pandas as pd
 
+    draw_other_check()
     samples_csv = pd.DataFrame(
         columns=[
             "mtx",
@@ -919,6 +928,7 @@ def draw_representative():
 
 
 def draw_spmv():
+    draw_other_check()
     import pandas
     import numpy as np
     import seaborn as sns
@@ -1089,6 +1099,7 @@ def draw_spmv():
 
 
 def draw_spmm():
+    draw_other_check()
     import pandas
     import numpy as np
     import seaborn as sns
@@ -1233,6 +1244,7 @@ def draw_spmm():
 
 
 def draw_spgemm():
+    draw_other_check()
     import pandas
     import numpy as np
     import seaborn as sns
