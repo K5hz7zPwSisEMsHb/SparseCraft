@@ -1,4 +1,4 @@
-from QuickProject import rt_dir
+from QuickProject import rt_dir, QproWarnString, _ask
 from QuickProject.Commander import Commander
 from . import *
 
@@ -11,6 +11,33 @@ def init_reset_build(path):
     else:
         os.mkdir(path)
 
+
+def check_path_dir_exists_and_create(path: str):
+    dir_path = os.path.dirname(path)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
+
+def platform_check(platform: str):
+    continue_flag = False
+    platform_flag = None
+    for _idx, keywords in enumerate(['20', '30', '40', '50']):
+        if platform.startswith(keywords):
+            continue_flag = True
+            platform_flag = _idx
+            break
+
+    if not continue_flag:
+        QproDefaultConsole.print(QproErrorString, f"{platform} is not supported.")
+        exit(1)
+
+    ln_platform = ["2090", "3090", "4090", "5090"][platform_flag]
+    if ln_platform == "2090":
+        from QuickProject import QproWarnString
+        QproDefaultConsole.print(QproWarnString, "20 series GPU is only supported for SparseCraft and cuSPARSE")
+    return ln_platform
+
+
 @app.command()
 def init(platform: str):
     """
@@ -20,14 +47,7 @@ def init(platform: str):
     """
     import shutil
 
-    if platform not in ["2090", "3090", "4090", "5090"]:
-        QproDefaultConsole.print(
-            QproErrorString, f"Invalid platform: {platform}, must be 2090, 3090, 4090 or 5090"
-        )
-        return
-    if platform == "2090":
-        from QuickProject import QproWarnString
-        QproDefaultConsole.print(QproWarnString, "2090 is only supported for SparseCraft and cuSPARSE")
+    ln_platform = platform_check(platform)
 
     from . import _ask
 
@@ -46,7 +66,7 @@ def init(platform: str):
 
     pwd = os.getcwd()
     os.system(
-        f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
+        f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
     )
     os.chdir(f"{sparsecraft_dir}/BLAS")
     init_reset_build("dist")
@@ -54,7 +74,7 @@ def init(platform: str):
     os.chdir(pwd)
 
     os.system(
-        f"ln -snf {compile_file_dir}/SparseCraft/DataGen/{platform}/CMakeLists.txt {sparsecraft_dir}/DataGen/CMakeLists.txt"
+        f"ln -snf {compile_file_dir}/SparseCraft/DataGen/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/DataGen/CMakeLists.txt"
     )
     os.chdir(f"{sparsecraft_dir}/DataGen")
     init_reset_build("dist")
@@ -62,7 +82,7 @@ def init(platform: str):
     os.chdir(pwd)
 
     os.system(
-        f"ln -snf {compile_file_dir}/cuSPARSE/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/cusparse-test/CMakeLists.txt"
+        f"ln -snf {compile_file_dir}/cuSPARSE/{ln_platform}/CMakeLists.txt {rt_dir}/OtherPKG/cusparse-test/CMakeLists.txt"
     )
     os.chdir(f"{rt_dir}/OtherPKG/cusparse-test")
     init_reset_build("build")
@@ -70,26 +90,26 @@ def init(platform: str):
     os.system("qrun compile")
     os.chdir(pwd)
 
-    if platform != '2090':
+    if ln_platform != '2090':
         os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM")
-        os.system(f'ln -snf {rt_dir}/CompileConfig/ASpT/{platform}/compile_GPU_SpMM_ASpT.sh compile_GPU_SpMM_ASpT.sh')
+        os.system(f'ln -snf {rt_dir}/CompileConfig/ASpT/{ln_platform}/compile_GPU_SpMM_ASpT.sh compile_GPU_SpMM_ASpT.sh')
         os.system("./compile_GPU_SpMM_ASpT.sh")
         os.chdir(pwd)
 
-        os.system(f'ln -snf {compile_file_dir}/CSR5/{platform}/Makefile {rt_dir}/OtherPKG/CSR5_cuda/Makefile')
+        os.system(f'ln -snf {compile_file_dir}/CSR5/{ln_platform}/Makefile {rt_dir}/OtherPKG/CSR5_cuda/Makefile')
         os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
         os.system("make")
         os.chdir(pwd)
 
         os.system(
-            f"ln -snf {compile_file_dir}/Kokkos/{platform}/CMakeLists.txt {rt_dir}/OtherPKG/kokkos-test/CMakeLists.txt"
+            f"ln -snf {compile_file_dir}/Kokkos/{ln_platform}/CMakeLists.txt {rt_dir}/OtherPKG/kokkos-test/CMakeLists.txt"
         )
         os.chdir(f"{rt_dir}/OtherPKG/kokkos-test/pkg/kokkos")
         if os.path.exists("build"):
             shutil.rmtree("build")
         os.mkdir("build")
         os.chdir("build")
-        arch = {"3090": "AMPERE86", "4090": "ADA89", "5090": "BLACKWELL120"}[platform]
+        arch = {"3090": "AMPERE86", "4090": "ADA89", "5090": "BLACKWELL120"}[ln_platform]
         os.system(
             f"cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_{arch}=ON -DCMAKE_INSTALL_PREFIX=../install"
         )
@@ -119,12 +139,12 @@ def init(platform: str):
         os.chdir(pwd)
 
         os.system(f'ln -snf {rt_dir}/OtherPKG/CSR5_cuda {rt_dir}/OtherPKG/TileSpMV-master/src/external/CSR5_cuda')
-        os.system(f'ln -snf {compile_file_dir}/TileSpMV/{platform}/Makefile {rt_dir}/OtherPKG/TileSpMV-master/src/Makefile')
+        os.system(f'ln -snf {compile_file_dir}/TileSpMV/{ln_platform}/Makefile {rt_dir}/OtherPKG/TileSpMV-master/src/Makefile')
         os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
         os.system("make")
         os.chdir(pwd)
 
-        os.system(f'ln -snf {compile_file_dir}/TileSpGEMM/{platform}/Makefile {rt_dir}/OtherPKG/TileSpGEMM/src/Makefile')
+        os.system(f'ln -snf {compile_file_dir}/TileSpGEMM/{ln_platform}/Makefile {rt_dir}/OtherPKG/TileSpGEMM/src/Makefile')
         os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
         os.system("make")
         os.chdir(pwd)
@@ -149,12 +169,15 @@ def pretrain():
         platform, device = f.read().strip().split()
     
     platform = '2090'
+    model_src_path = f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin'
     spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmm.bin'
     spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmv.bin'
     
+    check_path_dir_exists_and_create(model_src_path)
     if os.path.exists(spmm_model_target_path):
         QproDefaultConsole.print("SpMM Model Already Exists")
     else:
+        check_path_dir_exists_and_create(spmm_model_target_path)
         QproDefaultConsole.print("Start Generating SpMM Pretrain Data")
         os.chdir(f"{rt_dir}/SparseCraft/DataGen")
         os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-P.txt')
@@ -171,6 +194,7 @@ def pretrain():
     if os.path.exists(spmv_model_target_path):
         QproDefaultConsole.print("SpMV Model Already Exists")
     else:
+        check_path_dir_exists_and_create(spmv_model_target_path)
         QproDefaultConsole.print("Start Generating SpMV Pretrain Data")
         os.chdir(f"{rt_dir}/SparseCraft/DataGen")
         os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-P.txt')
@@ -190,39 +214,47 @@ def fine_tune_new():
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, device = f.read().strip().split()
     
-    platform = '2090'
+    model_src_path = f'{rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin'
     spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmm.bin'
     spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmv.bin'
     
-    
-    QproDefaultConsole.print("Start Generating SpMM Pretrain Data")
-    os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-    os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
-    os.chdir("gen/spmm")
-    os.system(f"mv *.txt {platform}")
-    os.chdir(rt_dir)
+    check_path_dir_exists_and_create(model_src_path)
+    if os.path.exists(spmm_model_target_path):
+        QproDefaultConsole.print("SpMM Model Already Exists")
+    else:
+        check_path_dir_exists_and_create(spmm_model_target_path)
+        QproDefaultConsole.print("Start generating SpMM fine-tuning data")
+        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+        os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+        os.chdir("gen/spmm")
+        os.system(f"mv *.txt {platform}")
+        os.chdir(rt_dir)
 
-    QproDefaultConsole.print("Start Pretraining SpMM Model")
-    os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
-    os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
-    os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin')
-    os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin {spmm_model_target_path}')
+        QproDefaultConsole.print("Start train SpMM Model")
+        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
+        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin')
+        os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm_fine_tune.bin {spmm_model_target_path}')
     
-    # if os.path.exists(spmv_model_target_path):
-    #     QproDefaultConsole.print("SpMV Model Already Exists")
-    # else:
-    QproDefaultConsole.print("Start Generating SpMV Pretrain Data")
-    os.chdir(f"{rt_dir}/SparseCraft/DataGen")
-    os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
-    os.chdir("gen/spmv")
-    os.system(f"mv *.txt {platform}")
-    os.chdir(rt_dir)
+    if os.path.exists(spmv_model_target_path):
+        QproDefaultConsole.print("SpMV Model Already Exists")
+    else:
+        check_path_dir_exists_and_create(spmv_model_target_path)
+        QproDefaultConsole.print("Start generating SpMV fine-tuning data")
+        os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+        os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+        os.chdir("gen/spmv")
+        os.system(f"mv *.txt {platform}")
+        os.chdir(rt_dir)
 
-    QproDefaultConsole.print("Start Pretraining SpMV Model")
-    os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
-    os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
-    os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin')
-    os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin {spmv_model_target_path}')
+        QproDefaultConsole.print("Start train SpMV Model")
+        os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+        os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
+        os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin')
+        os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv_fine_tune.bin {spmv_model_target_path}')
+
+    if not (os.path.exists(spmm_model_target_path) and os.path.exists(spmv_model_target_path)):
+        QproDefaultConsole.print(QproErrorString, "Model files are incomplete")
 
 
 @app.command()
@@ -234,6 +266,8 @@ def representative():
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, _ = f.read().strip().split()
+    
+    ln_platform = platform_check(platform)
 
     pwd = os.getcwd()
     os.chdir(f"{rt_dir}/SparseCraft/BLAS")
@@ -252,39 +286,40 @@ def representative():
     shutil.copy(f"dist/{platform}-spgemm-cusparse-representative.csv", f"{rt_dir}/res")
     os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    os.system("qrun samples spmv")
-    os.system("qrun samples spmm")
-    os.system("qrun samples spgemm")
-    shutil.copy(f"dist/{platform}-spmv-kokkos-representative.csv", f"{rt_dir}/res")
-    shutil.copy(f"dist/{platform}-spmm-kokkos-representative.csv", f"{rt_dir}/res")
-    shutil.copy(f"dist/{platform}-spgemm-kokkos-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+    if ln_platform != '2090':
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
+        os.system("qrun samples spmv")
+        os.system("qrun samples spmm")
+        os.system("qrun samples spgemm")
+        shutil.copy(f"dist/{platform}-spmv-kokkos-representative.csv", f"{rt_dir}/res")
+        shutil.copy(f"dist/{platform}-spmm-kokkos-representative.csv", f"{rt_dir}/res")
+        shutil.copy(f"dist/{platform}-spgemm-kokkos-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
-    os.system("qrun samples")
-    shutil.copy(f"dist/{platform}-spmv-csr5-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
+        os.system("qrun samples")
+        shutil.copy(f"dist/{platform}-spmv-csr5-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
-    os.system("qrun samples")
-    shutil.copy(f"dist/{platform}-spmv-tilespmv-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
+        os.system("qrun samples")
+        shutil.copy(f"dist/{platform}-spmv-tilespmv-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM/ASpT_SpMM_GPU")
-    os.system("qrun samples")
-    shutil.copy(f"{platform}-spmm-aspt-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM/ASpT_SpMM_GPU")
+        os.system("qrun samples")
+        shutil.copy(f"{platform}-spmm-aspt-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
-    os.system("qrun samples")
-    shutil.copy(f"dist/{platform}-spgemm-nsparse-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
+        os.system("qrun samples")
+        shutil.copy(f"dist/{platform}-spgemm-nsparse-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
-    os.system("qrun samples")
-    shutil.copy(f"dist/{platform}-spgemm-tilespgemm-representative.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
+        os.system("qrun samples")
+        shutil.copy(f"dist/{platform}-spgemm-tilespgemm-representative.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
 
 def get_csv_path(filepath):
@@ -297,6 +332,15 @@ def get_csv_path(filepath):
 def fine_tune():
     os.chdir(f'{rt_dir}/SparseCraft/SlimeNet')
     os.system('qrun test-all')
+
+    with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
+        platform, _ = f.read().strip().split()
+    
+    ln_platform = platform_check(platform)
+
+    if ln_platform not in ['3090', '4090', '5090']:
+        QproDefaultConsole.print(QproErrorString, f"{platform} is not supported for fine-tuning")
+        return
     os.chdir(f'{rt_dir}/SparseCraft/BLAS')
     os.system('qrun fine-tune')
 
@@ -307,6 +351,8 @@ def spmv():
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, _ = f.read().strip().split()
+    
+    ln_platform = platform_check(platform)
 
     pwd = os.getcwd()
     os.chdir(f"{rt_dir}/SparseCraft/BLAS")
@@ -319,20 +365,21 @@ def spmv():
     shutil.copy(f"dist/{platform}-spmv-cusparse.csv", f"{rt_dir}/res")
     os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    os.system("qrun test spmv")
-    shutil.copy(f"dist/{platform}-spmv-kokkos.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+    if ln_platform != '2090':
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
+        os.system("qrun test spmv")
+        shutil.copy(f"dist/{platform}-spmv-kokkos.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
-    os.system("qrun spmv")
-    shutil.copy(f"dist/{platform}-spmv-csr5.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
-    
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
-    os.system("qrun spmv")
-    shutil.copy(f"dist/{platform}-spmv-tilespmv.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/CSR5_cuda")
+        os.system("qrun spmv")
+        shutil.copy(f"dist/{platform}-spmv-csr5.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
+        
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpMV-master/src")
+        os.system("qrun spmv")
+        shutil.copy(f"dist/{platform}-spmv-tilespmv.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
 
 @app.command()
@@ -341,6 +388,8 @@ def spmm():
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, _ = f.read().strip().split()
+
+    ln_platform = platform_check(platform)
 
     pwd = os.getcwd()
     os.chdir(f"{rt_dir}/SparseCraft/BLAS")
@@ -353,15 +402,16 @@ def spmm():
     shutil.copy(f"dist/{platform}-spmm-cusparse.csv", f"{rt_dir}/res")
     os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    os.system("qrun test spmm")
-    shutil.copy(f"dist/{platform}-spmm-kokkos.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+    if ln_platform != '2090':
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
+        os.system("qrun test spmm")
+        shutil.copy(f"dist/{platform}-spmm-kokkos.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM/ASpT_SpMM_GPU")
-    os.system("qrun spmm")
-    shutil.copy(f"{platform}-spmm-aspt.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/ASpT-SpMM/ASpT_SpMM_GPU")
+        os.system("qrun spmm")
+        shutil.copy(f"{platform}-spmm-aspt.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
 
 @app.command()
@@ -370,6 +420,8 @@ def spgemm():
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, _ = f.read().strip().split()
+
+    ln_platform = platform_check(platform)
 
     pwd = os.getcwd()
     os.chdir(f"{rt_dir}/SparseCraft/BLAS")
@@ -382,37 +434,52 @@ def spgemm():
     shutil.copy(f"dist/{platform}-spgemm-cusparse.csv", f"{rt_dir}/res")
     os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
-    os.system("qrun test spgemm")
-    shutil.copy(f"dist/{platform}-spgemm-kokkos.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+    if ln_platform != '2090':
+        os.chdir(f"{rt_dir}/OtherPKG/kokkos-test")
+        os.system("qrun test spgemm")
+        shutil.copy(f"dist/{platform}-spgemm-kokkos.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
-    os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
-    os.system("qrun spgemm")
-    shutil.copy(f"dist/{platform}-spgemm-nsparse.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
-    
-    os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
-    os.system("qrun spgemm")
-    shutil.copy(f"dist/{platform}-spgemm-tilespgemm.csv", f"{rt_dir}/res")
-    os.chdir(pwd)
+        os.chdir(f"{rt_dir}/OtherPKG/nsparse/cuda-c")
+        os.system("qrun spgemm")
+        shutil.copy(f"dist/{platform}-spgemm-nsparse.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
+        
+        os.chdir(f"{rt_dir}/OtherPKG/TileSpGEMM/src")
+        os.system("qrun spgemm")
+        shutil.copy(f"dist/{platform}-spgemm-tilespgemm.csv", f"{rt_dir}/res")
+        os.chdir(pwd)
 
 
 @app.command()
 def extract():
     src_file = os.path.join(rt_dir, 'matrix.7z')
     if os.path.exists(src_file):
-        import shutil
-
         os.system(f'./Utils/7zz x {src_file}')
         os.system(f'mv matrix/* {rt_dir}/SparseCraft/Matrices')
 
 
-def draw_predict():
-    import pandas as pd
-
+def draw_predict_platform_check():
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, _ = f.read().strip().split()
+
+    ln_platform = platform_check(platform)
+    if ln_platform not in ['3090', '4090', '5090']:
+        QproDefaultConsole.print(QproWarnString, f"{platform} is not supported, but we can draw it for 3090, 4090 or 5090 platforms")
+        platform = _ask(
+            {
+                'type': 'list',
+                'message': 'Choose available platform',
+                'choices': ['3090', '4090', '5090']
+            }
+        )
+    return platform
+
+
+def draw_predict():
+    platform = draw_predict_platform_check()
+
+    import pandas as pd
 
     samples_csv = pd.DataFrame(
         columns=[
@@ -1326,6 +1393,522 @@ def draw_figure(fig_id: int):
     fig_id -= 6
     func_ls = [draw_predict, draw_spmv, draw_spmm, draw_spgemm, draw_representative]
     func_ls[fig_id]()
+
+
+@app.command()
+def draw_platform_figure():
+    import pandas as pd
+
+    samples_csv = pd.DataFrame(
+        columns=[
+            "mtx",
+            "platform",
+            "cusparse-spmv",
+            "sparsecraft-spmv",
+            "cusparse-spmm",
+            "sparsecraft-spmm",
+            "cusparse-spgemm",
+            "sparsecraft-spgemm",
+        ]
+    )
+
+    samples_csv["mtx"] = [
+        "mc2depi",
+        "pkustk07",
+        "msc10848",
+        "rma10",
+        "ramage02",
+        "opt1",
+        "TSC_OPF_1047",
+        "trdheim",
+        "heart3",
+        "nemeth19",
+        "raefsky3",
+        "TSOPF_RS_b678_c2",
+        "geomean",
+    ]
+
+    with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
+        platform, _ = f.read().strip().split()
+
+    samples_csv["platform"] = [platform] * 13
+
+    for op in ["spmv", "spmm", "spgemm"]:
+        op_libs = ["cusparse", "sparsecraft"]
+        for lib in op_libs:
+            csv_path = get_csv_path(f"{platform}-{op}-{lib}-representative.csv")
+            cur_df = pd.read_csv(csv_path)
+
+            for mtx in samples_csv["mtx"][:-1]:
+                search_df = cur_df[cur_df["mtx"].apply(lambda x: mtx in x)]
+                if search_df.empty:
+                    gflops = 0
+                else:
+                    gflops = search_df["gflops"].values[0]
+                samples_csv.loc[
+                    (samples_csv["mtx"] == mtx)
+                    & (samples_csv["platform"] == platform),
+                    f"{lib}-{op}",
+                ] = gflops
+            # Add geomean values
+            samples_csv.loc[
+                (samples_csv["mtx"] == 'geomean')
+                & (samples_csv["platform"] == platform),
+                f"{lib}-{op}",
+            ] = cur_df["gflops"].mean()
+
+    import seaborn as sns
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
+
+    data = samples_csv
+
+    platforms = [platform]
+    platform_labels = [f"RTX {platform}"]
+    platform_alphas = {platform: 1}
+
+    # Filter data once per platform
+    data_dict = {
+        p: data[data["platform"] == p].reset_index(drop=True) for p in platforms
+    }
+
+    kernels = ["spmv", "spmm", "spgemm"]
+    color_tab = "tab10"
+    # Define base colors for methods consistently
+    method_colors_base = {
+        "cusparse": sns.color_palette(color_tab)[0],
+        "sparsecraft": sns.color_palette(color_tab)[2],
+    }
+
+    kernel_columns = {
+        "spmv": ["cusparse-spmv", "sparsecraft-spmv"],
+        "spmm": ["cusparse-spmm", "sparsecraft-spmm"],
+        "spgemm": ["cusparse-spgemm", "sparsecraft-spgemm"],
+    }
+    method_names = {
+        "cusparse": "cuSPARSE",
+        "sparsecraft": "SparseCraft",
+    }
+    # Map full column names to short method names
+    col_to_method = {
+        col: col.split("-")[0] for k, cols in kernel_columns.items() for col in cols
+    }
+
+    kernel_name = {"spmv": "SpMV", "spmm": "SpMM", "spgemm": "SpGEMM"}
+
+    fig, axes = plt.subplots(3, 1, figsize=(20, 8), sharey=False)
+    label_fontsize = 18
+
+    # --- Plotting Parameters ---
+    bar_width_method = 1.1  # Width of the overlaid bar cluster for one method
+    method_spacing = 0.2  # Space between method bars within a matrix group
+    group_spacing_factor = 1.2  # Multiplier for spacing between matrix groups
+
+    # Get unique matrix names
+    mtx_names = data_dict[platform]["mtx"].unique().tolist()
+    x_indices = np.arange(len(mtx_names))
+
+    legend_handles_methods = {}  # Store unique method handles for legend
+
+    for idx, kernel in enumerate(kernels):
+        ax = axes[idx]
+        methods_in_kernel_cols = kernel_columns[kernel]
+        num_methods = len(methods_in_kernel_cols)
+
+        # Calculate total width for one matrix group (all methods for one matrix)
+        group_width = (
+            num_methods * bar_width_method + (num_methods - 1) * method_spacing
+        )
+
+        # Calculate base positions for the center of each matrix group
+        group_center_distance = group_width * group_spacing_factor
+        x_centers = x_indices * group_center_distance
+        tick_positions = x_centers  # Ticks should be at the center of the group
+
+        subplot_method_handles = {}  # Use dict to avoid duplicates easily by key
+        subplot_platform_handles = {}
+
+        for mtx_idx, mtx in enumerate(mtx_names):
+            group_start_pos = x_centers[mtx_idx] - group_width / 2
+
+            for method_idx, method_col_name in enumerate(methods_in_kernel_cols):
+                method_short_name = col_to_method[method_col_name]
+                base_color = method_colors_base[method_short_name]
+
+                method_center_pos = (
+                    group_start_pos
+                    + method_idx * (bar_width_method + method_spacing)
+                    + bar_width_method / 2
+                )
+
+                for plat_idx, platform in enumerate(platforms):
+                    current_data = data_dict[platform]
+                    try:
+                        value = current_data.loc[
+                            current_data["mtx"] == mtx, method_col_name
+                        ].iloc[0]
+                        plot_value = 0 if pd.isna(value) or value < 0 else value
+                    except (IndexError, KeyError):  # Handle missing matrix or column
+                        plot_value = 0
+
+                    platform_alpha = platform_alphas[platform]
+
+                    # Plot bar at the SAME x position for this method/matrix
+                    bar = ax.bar(
+                        method_center_pos,  # Use the calculated center position
+                        plot_value,
+                        width=bar_width_method,  # Use the wider method bar width
+                        color=base_color,
+                        alpha=platform_alpha,
+                        edgecolor="black",  # Add edge color for clarity, optional
+                        linewidth=0.5,  # Optional edge width
+                        label=f"{method_short_name} {platform}",  # Label needed if generating legend directly from bars
+                    )
+
+                    # use ax.text to mark zero value
+                    if plot_value < 20:
+                        ax.text(
+                            method_center_pos,
+                            plot_value,
+                            round(plot_value, 2) if plot_value != 0 else "0.00",
+                            ha="center",
+                            va="bottom",
+                            fontsize=20,
+                            rotation=90,
+                            color="black",
+                        )
+                    elif mtx == "TSOPF_RS_b678_c2" and kernel == "spgemm":
+                        ax.text(
+                            method_center_pos,
+                            plot_value,
+                            round(plot_value, 2),
+                            ha="center",
+                            va="bottom",
+                            fontsize=20,
+                            rotation=90,
+                            color="black",
+                        )
+                    if method_short_name not in subplot_method_handles:
+                        subplot_method_handles[method_short_name] = Patch(
+                            facecolor=base_color, label=method_names[method_short_name]
+                        )
+                    platform_label = platform_labels[plat_idx]
+                    if platform_label not in subplot_platform_handles:
+                        subplot_platform_handles[platform_label] = Patch(
+                            facecolor="grey", alpha=platform_alpha, label=platform_label
+                        )
+
+                if mtx_idx == 0:
+                    if method_short_name not in legend_handles_methods:
+                        legend_handles_methods[method_short_name] = Patch(
+                            facecolor=base_color, label=method_short_name.capitalize()
+                        )
+
+        ax.set_xticks(tick_positions)
+        if idx == len(kernels) - 1:
+            ax.set_xticklabels(
+                [item[:3] + "..." for item in mtx_names if item != mtx_names[-1]]
+                + ["geomean"],
+                rotation=0,
+                ha="center",
+                fontsize=label_fontsize + 4,
+            )
+        else:
+            ax.set_xticklabels([])
+
+        method_order = list(method_colors_base.keys())
+        method_order.pop(method_order.index("sparsecraft"))  
+        method_order.append("sparsecraft")
+        ordered_method_handles_subplot = [
+            subplot_method_handles[m]
+            for m in method_order
+            if m in subplot_method_handles
+        ]
+        ordered_platform_handles_subplot = [
+            subplot_platform_handles[p]
+            for p in platform_labels
+            if p in subplot_platform_handles
+        ]
+        tmp_platform_legend = ordered_platform_handles_subplot
+
+        ax.legend(
+            handles=ordered_method_handles_subplot,
+            handlelength=0.5,
+            columnspacing=0.6,
+            handletextpad=0.4,
+            loc="upper left",
+            bbox_to_anchor=(
+                0.0,
+                0.99,
+            ),
+            fontsize=label_fontsize,
+            ncol=len(ordered_method_handles_subplot),
+            title_fontsize=label_fontsize + 1,
+        )
+
+        kernel_max = {"spmv": 800, "spmm": 1500, "spgemm": 800}
+
+        kernel_ticks = {
+            "spmv": [0, 400, 800],
+            "spmm": [0, 750, 1500],
+            "spgemm": [0, 400, 800],
+        }
+
+        ax.set_ylim(0, kernel_max[kernel])
+        ax.set_yticks(kernel_ticks[kernel])
+        ax.set_ylabel(
+            f"{kernel_name[kernel]}\nGFLOPS", fontsize=label_fontsize + 4, labelpad=10
+        )
+        ax.tick_params(axis="y", labelsize=label_fontsize + 4)
+        ax.grid(True, axis="y", linestyle=":", alpha=0.7)
+        ax.margins(x=0.015)
+
+    fig.align_ylabels(axes)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    output_path = f"img/fig10-{platform}.pdf"
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path)
+    print(f"Plot saved to {output_path}")
+
+    # create new empty figure
+    colors = sns.color_palette("tab10", 7)
+    fig, axs = plt.subplots(1, 1, figsize=(7, 3))
+    fig.subplots_adjust(hspace=-0.2)
+    platforms = [platform]
+
+    info_df = pd.read_csv("mtx-info/spmv-info.csv")
+    info_df['ipb'] = info_df['mpnz'] / info_df['mp16']
+
+    for _, platform in enumerate(platforms):
+        ax = axs
+        csv_path = get_csv_path(f"{platform}-spmv-sparsecraft.csv")
+        odf = pd.read_csv(csv_path)
+        odf = odf[odf['nnz'] <= 329499284]
+        # odf = odf[odf['nnz'] > 1e5]
+        print(f"Processing platform: {platform}")
+        cusparase_odf = pd.read_csv(get_csv_path(f"{platform}-spmv-cusparse.csv"))
+        cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
+        cusparse_mtx = set(cusparase_odf["mtx"].to_list())
+
+        for mtx in odf["mtx"].to_list():
+            info_row = info_df[info_df["mtx"] == mtx]
+            if info_row.empty:
+                continue
+            odf.loc[odf["mtx"] == mtx, "ipb"] = info_row["ipb"].values[0]
+            
+            if mtx not in cusparse_mtx:
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = 0
+            else:
+                cusparse_row = cusparase_odf[cusparase_odf["mtx"] == mtx]
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = cusparse_row["gflops"].values[0]
+            
+        y_cusparse = []
+        y_pixel = []
+        valid_pixel = []
+        for i in range(0, 256):
+            cur_df = odf[odf['ipb'] >= i]
+            cur_df = cur_df[cur_df['ipb'] < i + 1]
+            # count best performance
+            if cur_df.empty:
+                y_cusparse.append(0)
+                y_pixel.append(0)
+            else:
+                cusparse_best = cur_df[cur_df['cusparse'] > cur_df['pixel_gflops']]
+                y_cusparse.append(cusparse_best.shape[0])
+                
+                pixel_best = cur_df[cur_df['pixel_gflops'] >= cur_df['cusparse']]
+                y_pixel.append(pixel_best.shape[0])
+
+                total = y_cusparse[-1] + y_pixel[-1]
+                if total == 0:
+                    total = 1
+                y_cusparse[-1] = y_cusparse[-1] / total
+                y_pixel[-1] = y_pixel[-1] / total
+                valid_pixel.append(y_pixel[-1])
+
+        # 画堆叠柱状图
+        x = np.arange(256)
+        width = 1
+        y_cusparse = np.array(y_cusparse) * 100
+        y_pixel = np.array(y_pixel) * 100  
+
+        ax.bar(x, y_cusparse, width, label='cuSPARSE', color=colors[0])
+        ax.bar(x, y_pixel, width, label='SparseCraft', color=colors[2], bottom=y_cusparse)
+        ax.set_xlim(0, 256)
+        ax.set_ylabel(f'RTX {platform}', fontsize=13)
+        ax.set_yticklabels(['0%', '50%', '100%'], fontsize=13)
+        ax.set_xlabel("Intermidiate products per block (IPB)", fontsize=13)
+        ax.set_xticks([0, 64, 128, 192, 256])
+        ax.set_xticklabels([0, 64, 128, 192, 256], fontsize=13)
+
+    legend = [
+        # use rectangle markers
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[0]),
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[2]),
+    ]
+    legend_labels = ["cuSPARSE", "SparseCraft"]
+    axs.legend(handles=legend, labels=legend_labels, ncol=len(legend), bbox_to_anchor=(0.5, 1.4), loc="center", fontsize=13, handlelength=0.5, columnspacing=0.6, handletextpad=0.4)
+    # Reduce space between subplots
+    plt.tight_layout()
+    plt.savefig(f"img/fig7-{platform}.png", dpi=300)
+
+    fig, axs = plt.subplots(1, 1, figsize=(7, 3))
+    fig.subplots_adjust(hspace=-0.2)
+
+    info_df = pd.read_csv("mtx-info/spmm-info.csv")
+    info_df['ipb'] = info_df['mpnz'] / info_df['mp16'] / 2
+    ipb_max = info_df['ipb'].max()
+    ipb_max = int(ipb_max)
+
+    for _, platform in enumerate(platforms):
+        ax = axs
+        csv_path = get_csv_path(f"{platform}-spmm-sparsecraft.csv")
+        odf = pd.read_csv(csv_path)
+        odf = odf[odf['nnz'] <= 329499284]
+        # odf = odf[odf['nnz'] >= 2e4]
+        cusparase_odf = pd.read_csv(get_csv_path(f"{platform}-spmm-cusparse.csv"))
+        cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
+        cusparse_mtx = set(cusparase_odf["mtx"].to_list())
+
+        for mtx in odf["mtx"].to_list():
+            info_row = info_df[info_df["mtx"] == mtx]
+            if info_row.empty:
+                continue
+            if mtx not in cusparse_mtx:
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = 0
+            else:
+                cusparse_row = cusparase_odf[cusparase_odf["mtx"] == mtx]
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = cusparse_row["gflops"].values[0]
+            
+            odf.loc[odf["mtx"] == mtx, "ipb"] = info_row["ipb"].values[0]
+
+        y_cusparse = []
+        y_pixel = []
+        valid_pixel = []
+        for i in range(0, ipb_max):
+            cur_df = odf[odf['ipb'] >= i]
+            cur_df = cur_df[cur_df['ipb'] < i + 1]
+            # count best performance
+            if cur_df.empty:
+                y_cusparse.append(0)
+                y_pixel.append(0)
+            else:
+                cusparse_best = cur_df[cur_df['cusparse'] > cur_df['pixel_gflops']]
+                y_cusparse.append(cusparse_best.shape[0])
+                
+                pixel_best = cur_df[cur_df['pixel_gflops'] >= cur_df['cusparse']]
+                y_pixel.append(pixel_best.shape[0])
+                
+                total = y_cusparse[-1] + y_pixel[-1]
+                y_cusparse[-1] = y_cusparse[-1] / total
+                y_pixel[-1] = y_pixel[-1] / total
+                valid_pixel.append(y_pixel[-1])
+                
+        # 画堆叠柱状图
+        x = np.arange(ipb_max)
+        width = 1
+        y_cusparse = np.array(y_cusparse) * 100
+        y_pixel = np.array(y_pixel) * 100
+
+        ax.bar(x, y_cusparse, width, label='cuSPARSE', color=colors[0])
+        ax.bar(x, y_pixel, width, label='SparseCraft', color=colors[2], bottom=y_cusparse)
+        
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0, 100)
+
+        ax.set_ylabel(f'RTX {platform}', fontsize=13)
+        ax.set_yticklabels(['0%', '50%', '100%'], fontsize=13)
+        ax.set_xticklabels([int(k) for k in ax.get_xticks()], fontsize=13)
+
+    axs.set_xlabel(f"Intermidiate products per block (IPB)", fontsize=13)
+    legend = [
+        # use rectangle markers
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[0]),
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[2]),
+    ]
+    legend_labels = ["cuSPARSE", "SparseCraft"]
+    axs.legend(handles=legend, labels=legend_labels, ncol=len(legend), bbox_to_anchor=(0.5, 1.4), loc="center", handlelength=0.5, fontsize=13, columnspacing=0.6, handletextpad=0.4)
+    plt.tight_layout()
+    plt.savefig(f"img/fig8-{platform}.png", dpi=300)
+
+    fig, axs = plt.subplots(1, 1, figsize=(7, 3))
+    fig.subplots_adjust(hspace=-0.2)
+
+    info_df = pd.read_csv("mtx-info/spgemm-info.csv")
+    info_df['ipb'] = info_df['mpnz'] / info_df['mp16']
+    ipb_max = info_df['ipb'].max()
+    # ceil
+    ipb_max = int(ipb_max)
+    
+    for _, platform in enumerate(platforms):
+        ax = axs
+        csv_path = get_csv_path(f"{platform}-spgemm-sparsecraft.csv")
+        odf = pd.read_csv(csv_path)
+        cusparase_odf = pd.read_csv(get_csv_path(f"{platform}-spgemm-cusparse.csv"))
+        cusparase_odf = cusparase_odf[cusparase_odf['gflops'] < 1635]
+        cusparse_mtx = set(cusparase_odf["mtx"].to_list())
+
+        for mtx in odf["mtx"].to_list():
+            info_row = info_df[info_df["mtx"] == mtx]
+            if info_row.empty:
+                continue
+            odf.loc[odf["mtx"] == mtx, "ipb"] = info_row["ipb"].values[0]
+            
+            if mtx not in cusparse_mtx:
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = 0
+            else:
+                cusparse_row = cusparase_odf[cusparase_odf["mtx"] == mtx]
+                odf.loc[odf["mtx"] == mtx, "cusparse"] = cusparse_row["gflops"].values[0]
+
+        y_cusparse = []
+        y_pixel = []
+        best_pixel = []
+        for i in range(0, ipb_max):
+            cur_df = odf[odf['ipb'] >= i]
+            cur_df = cur_df[cur_df['ipb'] < i + 1]
+            # count best performance
+            if cur_df.empty:
+                y_cusparse.append(0)
+                y_pixel.append(0)
+            else:
+                cusparse_best = cur_df[cur_df['cusparse'] > cur_df['pixel_gflops']]
+                y_cusparse.append(cusparse_best.shape[0])
+                
+                pixel_best = cur_df[cur_df['pixel_gflops'] >= cur_df['cusparse']]
+                y_pixel.append(pixel_best.shape[0])
+                
+                total = y_cusparse[-1] + y_pixel[-1]
+                if total == 0:
+                    total = 1
+                y_cusparse[-1] = y_cusparse[-1] / total
+                y_pixel[-1] = y_pixel[-1] / total
+                best_pixel.append(y_pixel[-1])
+        
+        # 画堆叠柱状图
+        x = np.arange(ipb_max)
+        width = 1
+        y_cusparse = np.array(y_cusparse) * 100
+        y_pixel = np.array(y_pixel) * 100
+
+        ax.bar(x, y_cusparse, width, label='cuSPARSE', color=colors[0])
+        ax.bar(x, y_pixel, width, label='SparseCraft', color=colors[2], bottom=y_cusparse)
+        ax.set_xlim(0, 500)
+
+        ax.set_ylabel(f'RTX {platform}', fontsize=13)
+        ax.set_yticklabels(['0%', '50%', '100%'], fontsize=13)
+        ax.set_xticklabels([int(x) for x in ax.get_xticks()], fontsize=13)
+
+    axs.set_xlabel(f"Intermidiate products per block (IPB)", fontsize=13)
+    legend = [
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[0]),
+        plt.Rectangle((0,0), 0.5, 0.5, color=colors[2]),
+    ]
+    legend_labels = ["cuSPARSE", "SparseCraft"]
+    axs.legend(handles=legend, labels=legend_labels, ncol=len(legend), bbox_to_anchor=(0.5, 1.4), loc="center", handlelength=0.5, fontsize=13, columnspacing=0.6, handletextpad=0.4)
+    plt.tight_layout()
+    plt.savefig(f"img/fig9-{platform}.png", dpi=300)
 
 
 def main():
