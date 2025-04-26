@@ -186,6 +186,46 @@ def pretrain():
 
 
 @app.command()
+def fine_tune_new():
+    with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
+        platform, device = f.read().strip().split()
+    
+    platform = '2090'
+    spmm_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmm.bin'
+    spmv_model_target_path = f'{rt_dir}/SparseCraft/BLAS/model/bin/{platform}/spmv.bin'
+    
+    
+    QproDefaultConsole.print("Start Generating SpMM Pretrain Data")
+    os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+    os.system(f'qrun run spmm --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+    os.chdir("gen/spmm")
+    os.system(f"mv *.txt {platform}")
+    os.chdir(rt_dir)
+
+    QproDefaultConsole.print("Start Pretraining SpMM Model")
+    os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+    os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmm/{platform}')
+    os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin')
+    os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmm.bin {spmm_model_target_path}')
+    
+    # if os.path.exists(spmv_model_target_path):
+    #     QproDefaultConsole.print("SpMV Model Already Exists")
+    # else:
+    QproDefaultConsole.print("Start Generating SpMV Pretrain Data")
+    os.chdir(f"{rt_dir}/SparseCraft/DataGen")
+    os.system(f'qrun run spmv --device {device} --batch {rt_dir}/SparseCraft/DataSet/WheatFarm-T.txt')
+    os.chdir("gen/spmv")
+    os.system(f"mv *.txt {platform}")
+    os.chdir(rt_dir)
+
+    QproDefaultConsole.print("Start Pretraining SpMV Model")
+    os.chdir(f"{rt_dir}/SparseCraft/SlimeNet")
+    os.system(f'qrun run {platform} --base-path {rt_dir}/SparseCraft/DataGen/gen/spmv/{platform}')
+    os.system(f'mv {rt_dir}/SparseCraft/SlimeNet/model/{platform}/{platform}_model.bin {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin')
+    os.system(f'cp {rt_dir}/SparseCraft/SlimeNet/model/{platform}/spmv.bin {spmv_model_target_path}')
+
+
+@app.command()
 def representative():
     """
     run representative 12 matrices for all libraries
