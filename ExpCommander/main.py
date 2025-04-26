@@ -2,7 +2,7 @@ from QuickProject import rt_dir, QproWarnString, _ask
 from QuickProject.Commander import Commander
 from . import *
 
-app = Commander(executable_name)
+app = Commander("pap927 artifact (SparseCraft)")
 
 def init_reset_build(path):
     if os.path.exists(path) and os.path.isdir(path):
@@ -164,6 +164,9 @@ def init(platform: str):
 
 @app.command()
 def pretrain():
+    """
+    Pretrain the models (takes 5 days).
+    """
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, device = f.read().strip().split()
     
@@ -212,6 +215,9 @@ def pretrain():
 
 @app.command()
 def fine_tune_new():
+    """
+    Fine-tuning the models (takes 1 day).
+    """
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
         platform, device = f.read().strip().split()
     
@@ -336,6 +342,9 @@ def get_csv_path(filepath):
 
 @app.command()
 def fine_tune():
+    """
+    Show fine tuning results (Table 10)
+    """
     os.chdir(f'{rt_dir}/SparseCraft/SlimeNet')
     os.system('qrun test-all')
 
@@ -353,6 +362,9 @@ def fine_tune():
 
 @app.command()
 def spmv():
+    """
+    Run SpMV for all libraries
+    """
     import shutil
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
@@ -390,6 +402,9 @@ def spmv():
 
 @app.command()
 def spmm():
+    """
+    Run SpMM for all libraries
+    """
     import shutil
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
@@ -422,6 +437,9 @@ def spmm():
 
 @app.command()
 def spgemm():
+    """
+    Run SpGEMM for all libraries
+    """
     import shutil
 
     with open(f"{rt_dir}/.CURRENT_PLATFORM", "r") as f:
@@ -459,6 +477,9 @@ def spgemm():
 
 @app.command()
 def extract():
+    """
+    Extract the matrix files from the 7z archive.
+    """
     src_file = os.path.join(rt_dir, 'matrix.7z')
     if os.path.exists(src_file):
         os.system(f'./Utils/7zz x {src_file}')
@@ -1408,6 +1429,9 @@ def draw_spgemm():
 
 @app.command()
 def draw_figure(fig_id: int):
+    """
+    Draw figures in the paper
+    """
     fig_id -= 6
     func_ls = [draw_predict, draw_spmv, draw_spmm, draw_spgemm, draw_representative]
     func_ls[fig_id]()
@@ -1415,6 +1439,9 @@ def draw_figure(fig_id: int):
 
 @app.command()
 def draw_platform_figure():
+    """
+    Draw figures for current platform (vs cuSPARSE)
+    """
     import pandas as pd
 
     samples_csv = pd.DataFrame(
