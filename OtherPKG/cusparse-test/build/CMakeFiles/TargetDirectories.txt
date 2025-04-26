@@ -1,3 +1,0 @@
-/root/OtherPKG/cusparse-test/build/CMakeFiles/cusparse_test.dir
-/root/OtherPKG/cusparse-test/build/CMakeFiles/edit_cache.dir
-/root/OtherPKG/cusparse-test/build/CMakeFiles/rebuild_cache.dir

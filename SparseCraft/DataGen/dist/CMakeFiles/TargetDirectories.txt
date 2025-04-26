@@ -1,3 +1,0 @@
-/root/SparseCraft/DataGen/dist/CMakeFiles/DataGen.dir
-/root/SparseCraft/DataGen/dist/CMakeFiles/edit_cache.dir
-/root/SparseCraft/DataGen/dist/CMakeFiles/rebuild_cache.dir
