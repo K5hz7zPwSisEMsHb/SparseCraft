@@ -240,7 +240,7 @@ def samples():
             QproDefaultStatus(f"SparseCraft: {op}, {mname}")
             st, ct = external_exec(f"./dist/{name} ../Matrices/{mname} {repeat[op]} {right_n} {device} {op}", without_output=True)
             if st:
-                print(ct)
+                QproDefaultConsole.print(ct)
                 return
             perf = ct.strip().split('\n')[-1]
             perf_ls.append(perf)
