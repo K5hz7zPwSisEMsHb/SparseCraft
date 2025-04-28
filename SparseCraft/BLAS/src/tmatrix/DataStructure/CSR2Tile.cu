@@ -733,7 +733,7 @@ double set_memory_pool(BaseMatrixCSC*dC)
     uint64_t *tmp;
     double used_time = 0;
 
-    cudaMalloc(&tmp, (dC->_nnz + 1) * sizeof(uint64_t));
+    cudaCheckError(cudaMalloc(&tmp, (dC->_nnz + 1) * sizeof(uint64_t)));
     Timer t;
     timer_start(t);
     tile_bytes_calculate<<<(dC->_nnz + 255) / 256, 256>>>(dC->tiles, tmp, dC->_nnz);
