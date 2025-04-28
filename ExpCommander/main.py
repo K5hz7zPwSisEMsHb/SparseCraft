@@ -72,7 +72,7 @@ def init(platform: str):
     init_reset_build("dist")
     os.system("qrun compile")
     if not os.path.exists('dist/BLAS'):
-        QproDefaultConsole.print(QproErrorString, "Compile failed!")
+        QproDefaultConsole.print(QproErrorString, "Compile failed for BLAS!")
         exit(1)
     os.chdir(pwd)
 
