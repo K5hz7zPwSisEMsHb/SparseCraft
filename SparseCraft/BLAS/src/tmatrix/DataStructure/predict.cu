@@ -132,8 +132,8 @@ sequence_slime_net* load_slimenet(const char *model_path)
     FILE *fp = fopen(model_path, "rb");
     if (!fp)
     {
-        fprintf(stderr, "无法打开模型文件: %s\n", model_path);
-        return 0;
+        fprintf(stderr, "Can not open model file: %s. Please pre-train or fine-tune the model first.\n", model_path);
+        return nullptr;
     }
 
     sequence_slime_net *network = new sequence_slime_net();

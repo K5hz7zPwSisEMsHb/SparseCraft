@@ -1079,6 +1079,7 @@ BaseMatrix* load_mtx_2_tile(
     predict_time = 0;
     if (predict == "pixel") {
         sequence_slime_net*model = load_slimenet("model/slime_net.bin");
+        if (model == nullptr) return nullptr;
         sequence_slime_net*d_modle = slimenet_to_device(model);
         Timer tt;
         timer_start(tt);
