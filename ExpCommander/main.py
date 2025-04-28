@@ -66,17 +66,6 @@ def init(platform: str):
 
     pwd = os.getcwd()
     os.system(
-        f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
-    )
-    os.chdir(f"{sparsecraft_dir}/BLAS")
-    init_reset_build("dist")
-    os.system("qrun compile")
-    if not os.path.exists('dist/BLAS'):
-        QproDefaultConsole.print(QproErrorString, "Compile failed for BLAS!")
-        exit(1)
-    os.chdir(pwd)
-
-    os.system(
         f"ln -snf {compile_file_dir}/SparseCraft/DataGen/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/DataGen/CMakeLists.txt"
     )
     os.chdir(f"{sparsecraft_dir}/DataGen")
@@ -84,6 +73,17 @@ def init(platform: str):
     os.system("qrun compile")
     if not os.path.exists('dist/DataGen'):
         QproDefaultConsole.print(QproErrorString, "Compile failed for DataGen!")
+        exit(1)
+    os.chdir(pwd)
+
+    os.system(
+        f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
+    )
+    os.chdir(f"{sparsecraft_dir}/BLAS")
+    init_reset_build("dist")
+    os.system("qrun compile")
+    if not os.path.exists('dist/BLAS'):
+        QproDefaultConsole.print(QproErrorString, "Compile failed for BLAS!")
         exit(1)
     os.chdir(pwd)
 
