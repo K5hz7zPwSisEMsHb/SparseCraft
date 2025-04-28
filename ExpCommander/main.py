@@ -71,6 +71,9 @@ def init(platform: str):
     os.chdir(f"{sparsecraft_dir}/BLAS")
     init_reset_build("dist")
     os.system("qrun compile")
+    if not os.path.exists('dist/BLAS'):
+        QproDefaultConsole.print(QproErrorString, "Compile failed!")
+        exit(1)
     os.chdir(pwd)
 
     os.system(
@@ -79,6 +82,9 @@ def init(platform: str):
     os.chdir(f"{sparsecraft_dir}/DataGen")
     init_reset_build("dist")
     os.system("qrun compile")
+    if not os.path.exists('dist/DataGen'):
+        QproDefaultConsole.print(QproErrorString, "Compile failed for DataGen!")
+        exit(1)
     os.chdir(pwd)
 
     os.system(
