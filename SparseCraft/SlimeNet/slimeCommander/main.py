@@ -215,7 +215,7 @@ def test_all():
     
     # Execute Phase 1
     QproDefaultConsole.print(f"\nExecuting Phase 1: {len(phase1_tasks)} cross-platform tests")
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=9) as executor:
         phase1_results = list(executor.map(_run_single_test, phase1_tasks))
     
     # 显示 Phase 1 的 3x3 矩阵结果
@@ -290,7 +290,7 @@ def test_all():
     
     # Execute Phase 2
     QproDefaultConsole.print(f"\nExecuting Phase 2: {len(phase2_tasks)} fine-tuning tests")
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=9) as executor:
         phase2_results = list(executor.map(_run_single_test, phase2_tasks))
     
     # 创建最终总结表格
