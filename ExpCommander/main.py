@@ -368,7 +368,7 @@ def fine_tune():
     ln_platform = platform_check(platform)
 
     if ln_platform not in ['3090', '4090', '5090']:
-        QproDefaultConsole.print(QproErrorString, f"{platform} is not supported for fine-tuning")
+        QproDefaultConsole.print(QproErrorString, f"{platform} is not supported for performance test")
         return
     os.chdir(f'{rt_dir}/SparseCraft/BLAS')
     os.system('qrun fine-tune')
