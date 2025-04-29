@@ -25,25 +25,6 @@ Dataset *load_sparse_matrix_dataset(const char *data_dir)
         strcpy(dataset->label_names[i], FIXED_LABELS[i]);
     }
 
-    size_t image_size = (size_t)IMAGE_SIZE * IMAGE_SIZE;
-    size_t max_samples = (size_t)MAX_CLASSES * MAX_SAMPLES_PER_CLASS;
-    size_t total_elements = max_samples * image_size;
-    size_t total_bytes = total_elements * sizeof(double);
-
-    double *temp_images = (double *)malloc(total_bytes);
-    int *temp_labels = (int *)malloc(max_samples * sizeof(int));
-
-    if (!temp_images || !temp_labels)
-    {
-        fprintf(stderr, "Memory allocation failed; temp_images[%d] (%.3lf MB) = %p, temp_labels[%d] (%.3lf MB) = %p\n",
-                (int)total_elements, total_bytes / (1024.0 * 1024.0), temp_images,
-                (int)max_samples, max_samples * sizeof(int) / (1024.0 * 1024.0), temp_labels);
-        free(temp_images);
-        free(temp_labels);
-        free(dataset);
-        return NULL;
-    }
-
     int total_samples = 0;
 
     const char *filenames[] = {
@@ -63,10 +44,44 @@ Dataset *load_sparse_matrix_dataset(const char *data_dir)
         char line[512];
         while (fgets(line, sizeof(line), fp))
             line_count++;
+        
+        total_samples += line_count;
+        fclose(fp);
+    }
 
-        rewind(fp);
+    size_t image_size = (size_t)IMAGE_SIZE * IMAGE_SIZE;
+    size_t max_samples = (size_t)MAX_CLASSES * total_samples;
+    size_t total_elements = max_samples * image_size;
+    size_t total_bytes = total_elements * sizeof(double);
 
-        while (fgets(line, sizeof(line), fp) && total_samples < MAX_CLASSES * MAX_SAMPLES_PER_CLASS)
+    // double *temp_images = (double *)malloc(total_bytes);
+    // int *temp_labels = (int *)malloc(max_samples * sizeof(int));
+
+    dataset->num_samples = total_samples;
+    dataset->images = (double *)malloc(total_samples * IMAGE_SIZE * IMAGE_SIZE * sizeof(double));
+    dataset->labels = (int *)malloc(total_samples * sizeof(int));
+
+    if (!dataset->images || !dataset->labels)
+    {
+        fprintf(stderr, "Memory allocation failed; temp_images[%llu] (%.3lf MB) = %p, temp_labels[%llu] (%.3lf MB) = %p\n",
+                total_elements, total_bytes / (1024.0 * 1024.0), dataset->images,
+                max_samples, max_samples * sizeof(int) / (1024.0 * 1024.0), dataset->labels);
+        free(dataset);
+        return NULL;
+    }
+
+    int counter = 0;
+    for (int label = 0; label < 7; ++label)
+    {
+        char filepath[512];
+        sprintf(filepath, "%s/%s.txt", data_dir, filenames[label]);
+
+        FILE *fp = fopen(filepath, "r");
+        if (!fp)
+            continue;
+        char line[512];
+
+        while (fgets(line, sizeof(line), fp))
         {
             size_t len = strlen(line);
             if (len < IMAGE_SIZE * IMAGE_SIZE)
@@ -77,23 +92,13 @@ Dataset *load_sparse_matrix_dataset(const char *data_dir)
 
             for (int i = 0; i < IMAGE_SIZE * IMAGE_SIZE; i++)
             {
-                temp_images[total_samples * IMAGE_SIZE * IMAGE_SIZE + i] = (line[i] == '1') ? 1.0 : 0.0;
+                dataset->images[counter * IMAGE_SIZE * IMAGE_SIZE + i] = (line[i] == '1') ? 1.0 : 0.0;
             }
-            temp_labels[total_samples] = label;
-            total_samples++;
+            dataset->labels[counter] = label;
+            counter++;
         }
         fclose(fp);
     }
-
-    dataset->num_samples = total_samples;
-    dataset->images = (double *)malloc(total_samples * IMAGE_SIZE * IMAGE_SIZE * sizeof(double));
-    dataset->labels = (int *)malloc(total_samples * sizeof(int));
-
-    memcpy(dataset->images, temp_images, total_samples * IMAGE_SIZE * IMAGE_SIZE * sizeof(double));
-    memcpy(dataset->labels, temp_labels, total_samples * sizeof(int));
-
-    free(temp_images);
-    free(temp_labels);
 
     return dataset;
 }
