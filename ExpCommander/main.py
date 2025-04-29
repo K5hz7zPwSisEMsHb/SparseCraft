@@ -76,6 +76,14 @@ def init(platform: str):
         exit(1)
     os.chdir(pwd)
 
+    os.chdir(f"{sparsecraft_dir}/SlimeNet")
+    init_reset_build("dist")
+    os.system("qrun compile")
+    if not os.path.exists('dist/slime'):
+        QproDefaultConsole.print(QproErrorString, "Compile failed for SlimeNet!")
+        exit(1)
+    os.chdir(pwd)
+
     os.system(
         f"ln -snf {compile_file_dir}/SparseCraft/BLAS/{ln_platform}/CMakeLists.txt {sparsecraft_dir}/BLAS/CMakeLists.txt"
     )
