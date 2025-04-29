@@ -350,12 +350,12 @@ def test_all():
     # 显示最终总结
     QproDefaultConsole.print("\nFinal Summary:")
     QproDefaultConsole.print(final_phase1_acc_table)
-    QproDefaultConsole.print("\n")
-    QproDefaultConsole.print(final_phase1_perf_table)
+    # QproDefaultConsole.print("\n")
+    # QproDefaultConsole.print(final_phase1_perf_table)
     QproDefaultConsole.print("\n")
     QproDefaultConsole.print(final_phase2_acc_table)
-    QproDefaultConsole.print("\n")
-    QproDefaultConsole.print(final_phase2_perf_table)
+    # QproDefaultConsole.print("\n")
+    # QproDefaultConsole.print(final_phase2_perf_table)
     
     # 添加图例说明
     QproDefaultConsole.print("\n[bold]Legend:[/bold]")
