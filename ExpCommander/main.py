@@ -136,7 +136,7 @@ def init(platform: str):
         os.mkdir("build")
         os.chdir("build")
         os.system(
-            "cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../install .."
+            f"export Kokkos_DIR={rt_dir}/OtherPKG/kokkos-test/pkg/kokkos/install; cmake -DKokkosKernels_ENABLE_EXAMPLES=OFF -DKokkosKernels_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../install .."
         )
         os.system("make -j8")
         os.system("make install")
