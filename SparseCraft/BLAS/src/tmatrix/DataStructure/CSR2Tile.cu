@@ -287,7 +287,7 @@ void dense_tile_2_dns(const uint64_t* bitmap, MatValue*dense, TileIndex*bits, Ma
     memcpy(val, dense, 256 * sizeof(MatValue));
 }
 
-void dense_tile_2_fmt(dense_tile* t, TileIndex*bits, MatValue* val, TileFormat fmt)
+void dense_tile_2_fmt(uint64_t* bitmap, MatValue*dense_val, TileIndex*bits, MatValue* val, TileFormat fmt)
 {
     void (*bitmap2fmt[7])(const uint64_t* bitmap, MatValue*dense, TileIndex*bits, MatValue* val) = {
         dense_tile_2_coo,
@@ -298,7 +298,7 @@ void dense_tile_2_fmt(dense_tile* t, TileIndex*bits, MatValue* val, TileFormat f
         dense_tile_2_dcl,
         dense_tile_2_dns
     };
-    bitmap2fmt[fmt](t->bitmap, t->val, bits, val);
+    bitmap2fmt[fmt](bitmap, dense_val, bits, val);
 }
 
 __device__ uint16_t device_bitmap_count(const uint64_t *bitmap)
@@ -473,6 +473,172 @@ __device__ void device_bitmap_2_fmt(const uint64_t* bitmap, char *bits, TileForm
     bitmap2fmt[fmt](bitmap, (TileIndex*)bits);
 }
 
+__device__ void device_bitmap_2_coo(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    bits[0] = device_bitmap_count(bitmap) - 1;
+    
+    #pragma unroll
+    for (int i = 0, idx = 1; i < 256; ++i)
+    {
+        if (device_bitmap_check(bitmap, i))
+        {
+            bits[idx] = i;
+            val[idx - 1] = block[i];
+            idx++;
+        }
+    }
+}
+
+__device__ void device_bitmap_2_csr(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    TileIndex nnz = 0;
+
+    #pragma unroll
+    for (MatIndex i = 0; i < TILE_N; ++i)
+    {
+        uint16_t bitrow = bitmap_get_row(bitmap, i), nzr = __popc(bitrow);
+        for (MatIndex j = 0; j < nzr; ++j)
+        {
+            uint16_t lowbit = bitrow & -bitrow, col = __ffs(lowbit) - 1;
+            TileIndex_CSR_Set(bits + 17, nnz + j, col);
+            val[nnz + j] = block[i * TILE_N + col];
+            bitrow ^= lowbit;
+        }
+        nnz += nzr;
+        bits[i + 1] = nnz;
+    }
+    bits[0] = 0;
+}
+
+__device__ void device_bitmap_2_ell(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    MatIndex max_row_len = 0;
+    ushort row_map[16] = {0};
+
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        row_map[i] = bitmap_get_row(bitmap, i);
+        MatIndex row_len = __popc(row_map[i]);
+        max_row_len = max(max_row_len, row_len);
+    }
+
+    TileIndex_CSR_Set(bits, 0, max_row_len - 1);
+
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        MatIndex row_len = __popc(row_map[i]);
+        for (MatIndex j = 0; j < row_len; ++j)
+        {
+            uint16_t lowbit = row_map[i] & -row_map[i], col = __ffs(lowbit) - 1;
+            TileIndex_CSR_Set(bits, 1 + i * max_row_len + j, col);
+            val[i * max_row_len + j] = block[i * TILE_N + col];
+            row_map[i] ^= lowbit;
+        }
+    }
+}
+
+__device__ void device_bitmap_2_hyb(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    MatIndex min_row_len = 17, row_len[16] = {0}, cnt = 0;
+    uint16_t row_map[16] = {0};
+
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        row_map[i] = bitmap_get_row(bitmap, i);
+        row_len[i] = __popc(row_map[i]);
+        min_row_len = min(min_row_len, max(row_len[i], 1));
+    }
+    bits[0] = min_row_len;
+    MatIndex ell_using_size = (min_row_len * 16 + 1) / 2 + 2;
+
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        MatIndex rest = max(row_len[i] - min_row_len, 0);
+        for (MatIndex j = 0; j < min_row_len && row_map[i]; ++j)
+        {
+            uint16_t lowbit = row_map[i] & -row_map[i];
+            TileIndex col = __ffs(lowbit) - 1;
+            TileIndex_CSR_Set(bits, 4 + i * min_row_len + j, col);
+            val[i * min_row_len + j] = block[i * TILE_N + col];
+            row_map[i] ^= lowbit;
+        }
+
+        for (MatIndex j = 0; j < rest; ++j)
+        {
+            uint16_t lowbit = row_map[i] & -row_map[i];
+            TileIndex col = __ffs(lowbit) - 1;
+            bits[ell_using_size + cnt] = i << 4 | col;
+            val[min_row_len * 16 + cnt] = block[i * TILE_N + col];
+            cnt++;
+            row_map[i] ^= lowbit;
+        }
+    }
+    bits[1] = cnt;
+}
+
+__device__ void device_bitmap_2_drw(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    TileIndex cnt = 0;
+
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        if (bitmap_get_row(bitmap, i))
+        {
+            TileIndex_CSR_Set(bits, cnt + 1, i);
+            memcpy(val + cnt * TILE_N, block + i * TILE_N, TILE_N * sizeof(MatValue));
+            cnt++;
+        }
+    }
+    TileIndex_CSR_Set(bits, 0, cnt - 1);
+}
+
+__device__ void device_bitmap_2_dcl(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    TileIndex cnt = 0;
+    #pragma unroll
+    for (MatIndex i = 0; i < 16; ++i)
+    {
+        if (bitmap_get_col(bitmap, i))
+        {
+            TileIndex_CSR_Set(bits, cnt + 1, i);
+            #pragma unroll
+            for (MatIndex j = 0; j < 16; ++j)
+            {
+                val[cnt * TILE_N + j] = block[j * TILE_N + i];
+            }
+            cnt++;
+        }
+    }
+    TileIndex_CSR_Set(bits, 0, cnt - 1);
+}
+
+__device__ void device_bitmap_2_dns(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val)
+{
+    // For DNS, we don't need to do anything with the bitmap.
+    // The values are already in the block.
+    // We just need to copy the values to val.
+    memcpy(val, block, 256 * sizeof(MatValue));
+}
+
+__device__ void device_bitmap_2_fmt(const uint64_t* bitmap, const MatValue*block, char *bits, MatValue*val, TileFormat fmt)
+{
+    void (*bitmap2fmt[7])(const uint64_t* bitmap, const MatValue*block, TileIndex *bits, MatValue* val) = {
+        device_bitmap_2_coo,
+        device_bitmap_2_csr,
+        device_bitmap_2_ell,
+        device_bitmap_2_hyb,
+        device_bitmap_2_drw,
+        device_bitmap_2_dcl,
+        device_bitmap_2_dns
+    };
+    bitmap2fmt[fmt](bitmap, block, (TileIndex*)bits, val);
+}
+
 void update_bit64(uint64_t*b64, int row, int col)
 {
     int row8 = row / 8, col8 = col / 8;
@@ -538,11 +704,6 @@ __host__ __device__ uint16_t bitmap_get_col(const uint64_t *bitmap, TileIndex co
         col_lower >>= 8;
     }
     return res;
-}
-
-__device__ TileFormat pixel_select(const uint64_t*bitmap, int lane_id)
-{
-    return CSR;
 }
 
 __device__ TileFormat tile_select(const uint64_t*bitmap)
@@ -660,16 +821,6 @@ __global__ void tile_bytes_apply(Tile*tiles, char*data, uint64_t*tmp, const int 
     device_bitmap_2_fmt(tiles[gthread_id].bitmap, bits, fmt);
 }
 
-__global__ void tile_data_apply(const Tile*tiles, char*data, const int n)
-{
-    int gthread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    if (gthread_id >= n) return;
-
-    TileFormat fmt = tiles[gthread_id].fmt;
-    char*bits = data + tiles[gthread_id].bits_off;
-    device_bitmap_2_fmt(tiles[gthread_id].bitmap, bits, fmt);
-}
-
 double set_memory_pool(BaseMatrix*dC)
 {
     uint64_t *tmp;
@@ -727,6 +878,140 @@ double set_memory_pool(BaseMatrix*dC)
     cudaFree(tmp);
     return used_time;
 }
+
+
+// lower_bound 判断第gthread_id个块属于第几行
+__device__ MatIndex tile_lower_bound(MatIndex*tile_row_ptr, MatIndex length, MatIndex idx)
+{
+    MatIndex left = 0, right = length;
+    while (left < right)
+    {
+        MatIndex mid = (left + right) / 2;
+        if (tile_row_ptr[mid] > idx)
+            right = mid;
+        else
+            left = mid + 1;
+    }
+    return left - 1;
+}
+
+__host__ __device__ MatValue csr_binary_find_value(MatIndex *idx, MatValue*values, MatIndex target, MatIndex left, MatIndex right)
+{
+    while (left <= right)
+    {
+        MatIndex mid = left + (right - left) / 2;
+        if (idx[mid] == target) return values[mid];
+        else if (idx[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return 0; // not found
+}
+
+// __global__ void tile_bytes_apply(MatIndex*tile_row_ptr, MatIndex*tile_col_idx, Tile*tiles, char*data, uint64_t*tmp, MatIndex*dcsr_row_ptr, MatIndex*dcsr_col_idx, MatValue*dcsr_value, const int m, const int nnz)
+// {
+//     int gthread_id = blockIdx.x * blockDim.x + threadIdx.x;
+//     if (gthread_id >= nnz) return;
+//     tiles[gthread_id].bits_off = tmp[gthread_id] * 16;
+
+//     MatIndex row16 = tile_lower_bound(tile_row_ptr, m, gthread_id) * 16;
+//     MatIndex col16 = tile_col_idx[gthread_id] * 16;
+//     MatValue block[256] = {0};
+
+//     for (int k = 0; k < 16; ++k)
+//     {
+//         uint16_t row_map = bitmap_get_row(tiles[gthread_id].bitmap, k);
+//         while (row_map)
+//         {
+//             uint16_t lowbit = row_map & -row_map;
+//             TileIndex col = __ffs(lowbit) - 1;
+//             // block[k * TILE_N + col] = csr_binary_find_value(dcsr_col_idx, dcsr_value, col16 + col, dcsr_row_ptr[row16 + k], dcsr_row_ptr[row16 + k + 1] - 1);
+//             row_map ^= lowbit;
+//         }
+//     }
+
+//     TileFormat fmt = tiles[gthread_id].fmt;
+//     char*bits = data + tiles[gthread_id].bits_off;
+//     device_bitmap_2_fmt(tiles[gthread_id].bitmap, block, bits, (MatValue*)(bits + tiles[gthread_id].bitslen * 16), fmt);
+// }
+
+// double set_memory_pool(BaseMatrix*dC, MatIndex*row_ptr, MatIndex*col_idx, MatValue*values)
+// {
+//     uint64_t *tmp;
+//     double used_time = 0;
+
+//     cudaMalloc(&tmp, (dC->_nnz + 1) * sizeof(uint64_t));
+//     Timer t;
+//     timer_start(t);
+//     tile_bytes_calculate<<<(dC->_nnz + 255) / 256, 256>>>(dC->tiles, tmp, dC->_nnz);
+//     cudaDeviceSynchronize();
+//     timer_end(t);
+//     cudaError_t e = cudaGetLastError();
+//     if (e != cudaSuccess)
+//     {
+//         echo(error, "CUDA error set_memory_pool 0: %s", cudaGetErrorString(e));
+//         exit(1);
+//     }
+//     used_time += timer_duration(t);
+//     {
+//         void *d_temp_storage = NULL;
+//         size_t temp_storage_bytes = 0;
+//         timer_start(t);
+//         cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, tmp, dC->_nnz + 1);
+//         timer_end(t);
+//         used_time += timer_duration(t);
+//         cudaMalloc(&d_temp_storage, temp_storage_bytes);
+//         timer_start(t);
+//         cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, tmp, dC->_nnz + 1);
+//         timer_end(t);
+//         used_time += timer_duration(t);
+//         cudaFree(d_temp_storage);
+//     }
+//     cudaMemcpy(&dC->_data_len, tmp + dC->_nnz, sizeof(uint64_t), cudaMemcpyDeviceToHost);
+//     dC->_data_len *= 16;
+//     e = cudaMalloc(&dC->data, dC->_data_len);
+//     if (e != cudaSuccess)
+//     {
+//         echo(error, "Memory pool allocation failed: %s", cudaGetErrorString(e));
+//         echo(error, "Data length: %llu, memory: %.3lf MB", dC->_data_len, dC->_data_len / 1024.0 / 1024.0);
+//         exit(1);
+//     }
+//     cudaMemset(dC->data, 0, dC->_data_len);
+//     MatIndex *dcsr_row_ptr, *dcsr_col_idx, *dtile_row_ptr, *dtile_col_idx;
+//     MatValue *dcsr_value;
+//     e = cudaMalloc(&dtile_row_ptr, (dC->_m + 1) * sizeof(MatIndex));
+//     e = cudaMalloc(&dtile_col_idx, dC->_nnz * sizeof(MatIndex));
+//     e = cudaMalloc(&dcsr_row_ptr, (dC->meta_m + 1) * sizeof(MatIndex));
+//     e = cudaMalloc(&dcsr_col_idx, dC->meta_nnz * sizeof(MatIndex));
+//     e = cudaMalloc(&dcsr_value, dC->meta_nnz * sizeof(MatValue));
+//     if (e != cudaSuccess)
+//     {
+//         echo(error, "Memory allocation failed: %s", cudaGetErrorString(e));
+//         exit(1);
+//     }
+//     cudaMemcpy(dtile_row_ptr, dC->tile_row_ptr, (dC->_m + 1) * sizeof(MatIndex), cudaMemcpyHostToDevice);
+//     cudaMemcpy(dtile_col_idx, dC->tile_col_idx, dC->_nnz * sizeof(MatIndex), cudaMemcpyHostToDevice);
+//     cudaMemcpy(dcsr_row_ptr, row_ptr, (dC->meta_m + 1) * sizeof(MatIndex), cudaMemcpyHostToDevice);
+//     cudaMemcpy(dcsr_col_idx, col_idx, dC->meta_nnz * sizeof(MatIndex), cudaMemcpyHostToDevice);
+//     cudaMemcpy(dcsr_value, values, dC->meta_nnz * sizeof(MatValue), cudaMemcpyHostToDevice);
+//     timer_start(t);
+//     tile_bytes_apply<<<(dC->_nnz + 255) / 256, 256>>>(dtile_row_ptr, dtile_col_idx, dC->tiles, dC->data, tmp, dcsr_row_ptr, dcsr_col_idx, dcsr_value, dC->meta_m, dC->_nnz);
+//     cudaDeviceSynchronize();
+//     timer_end(t);
+//     e = cudaGetLastError();
+//     if (e != cudaSuccess)
+//     {
+//         echo(error, "CUDA error set_memory_pool 1: %s", cudaGetErrorString(e));
+//         exit(1);
+//     }
+//     used_time += timer_duration(t);
+//     cudaFree(tmp);
+//     cudaFree(dcsr_row_ptr);
+//     cudaFree(dcsr_col_idx);
+//     cudaFree(dcsr_value);
+//     cudaFree(dtile_row_ptr);
+//     cudaFree(dtile_col_idx);
+//     return used_time;
+// }
 
 double set_memory_pool(BaseMatrixCSC*dC)
 {
@@ -808,6 +1093,29 @@ __global__ void build_B_col_map(
     }
 }
 
+void*copy_bitmap(const void*bitmap)
+{
+    uint64_t *res = (uint64_t *)malloc(4 * sizeof(uint64_t));
+    memcpy(res, bitmap, 4 * sizeof(uint64_t));
+    return res;
+}
+
+void free_bitmap(void*bitmap)
+{
+    free(bitmap);
+}
+
+void merge_bitmap(void* dst, const void* src)
+{
+    uint64_t*dst_b = (uint64_t*)dst;
+    const uint64_t*src_b = (const uint64_t*)src;
+
+    dst_b[0] |= src_b[0];
+    dst_b[1] |= src_b[1];
+    dst_b[2] |= src_b[2];
+    dst_b[3] |= src_b[3];
+}
+
 BaseMatrixCSC* load_mtx_2_csc_tile(
     const char* filename, MatIndex*report_nnz, std::string predict,
     MatIndex&m, MatIndex&n, MatIndex&nnz, MatIndex*&row_ptr, MatIndex*&col_idx, MatValue*&csr_val)
@@ -829,7 +1137,7 @@ BaseMatrixCSC* load_mtx_2_csc_tile(
     #pragma omp parallel for
     for (int i = 0; i < t->_n; ++i)
     {
-        tile_distributions[i] = create_rbtree();
+        tile_distributions[i] = create_rbtree(copy_bitmap, free_bitmap, merge_bitmap);
     }
     t->tile_col_ptr = (MatIndex *)calloc((t->_n + 1), sizeof(MatIndex));
 
@@ -849,26 +1157,13 @@ BaseMatrixCSC* load_mtx_2_csc_tile(
             {
                 MatIndex col = col_idx[jj];
                 MatIndex col16 = col / TILE_N;
-                // lock the col16
                 omp_set_lock(&omp_locks[col16]);
-                RBTreeNode *node = rb_search(tile_distributions[col16], row16);
-                if (node == NULL)
-                {
-                    dense_tile t;
-                    update_bit64(t.bitmap, ii, col % TILE_N);
-                    t.val[ii * TILE_N + col % TILE_N] = csr_val[jj];
-                    rb_insert(tile_distributions[col16], row16, t);
-                }
-                else
-                {
-                    update_bit64(node->val.bitmap, ii, col % TILE_N);
-                    node->val.val[ii * TILE_N + col % TILE_N] = csr_val[jj];
-                }
-                // unlock the col16
+                uint64_t _m[4] = {0};
+                update_bit64(_m, ii, col % TILE_N);
+                rb_update(tile_distributions[col16], row16, _m);
                 omp_unset_lock(&omp_locks[col16]);
             }
         }
-        // t->tile_row_ptr[row16 + 1] = tile_distributions[row16]->size;
     }
 
     #pragma omp parallel for
@@ -896,7 +1191,7 @@ BaseMatrixCSC* load_mtx_2_csc_tile(
         {
             RBTreeNode *node = rb_iterator_next(it);
             t->tile_row_idx[idx] = node->key;
-            memcpy(t->tiles[idx].bitmap, node->val.bitmap, sizeof(uint64_t) * 4);
+            memcpy(t->tiles[idx].bitmap, node->val, sizeof(uint64_t) * 4);
             idx++;
         }
         free(it);
@@ -977,12 +1272,32 @@ BaseMatrixCSC* load_mtx_2_csc_tile(
         while (rb_iterator_has_next(it))
         {
             RBTreeNode *node = rb_iterator_next(it);
+            
+            MatIndex row16 = node->key * 16;
+            MatValue block[256] = {0};
+            uint64_t bitmap[4] = {0};
+            memcpy(bitmap, node->val, sizeof(uint64_t) * 4);
+            for (int k = 0; k < 16; ++k)
+            {
+                uint16_t row_map = bitmap_get_row(bitmap, k);
+                while (row_map)
+                {
+                    uint16_t lowbit = row_map & -row_map;
+                    int col = __builtin_ctz(lowbit);
+                    row_map ^= lowbit;
+                    
+                    block[k * TILE_N + col] = csr_binary_find_value(col_idx, csr_val, i * TILE_N + col, row_ptr[row16 + k], row_ptr[row16 + k + 1] - 1);
+                }
+            }
+
             dense_tile_2_fmt(
-                &(node->val),
+                bitmap,
+                block,
                 (TileIndex*) (t->data + t->tiles[j].bits_off),
                 (MatValue*) (t->data + t->tiles[j].bits_off + t->tiles[j].bitslen * 16),
                 t->tiles[j].fmt
             );
+
             ++j;
         }
         free(it);
@@ -1014,7 +1329,7 @@ BaseMatrix* load_mtx_2_tile(
     #pragma omp parallel for
     for (int i = 0; i < t->_m; ++i)
     {
-        tile_distributions[i] = create_rbtree();
+        tile_distributions[i] = create_rbtree(copy_bitmap, free_bitmap, merge_bitmap);
     }
     t->tile_row_ptr = (MatIndex *)calloc((t->_m + 1), sizeof(MatIndex));
 
@@ -1029,19 +1344,9 @@ BaseMatrix* load_mtx_2_tile(
             {
                 MatIndex col = col_idx[jj];
                 MatIndex col16 = col / TILE_N;
-                RBTreeNode *node = rb_search(tile_distributions[row16], col16);
-                if (node == NULL)
-                {
-                    dense_tile t;
-                    update_bit64(t.bitmap, ii, col % TILE_N);
-                    t.val[ii * TILE_N + col % TILE_N] = csr_val[jj];
-                    rb_insert(tile_distributions[row16], col16, t);
-                }
-                else
-                {
-                    update_bit64(node->val.bitmap, ii, col % TILE_N);
-                    node->val.val[ii * TILE_N + col % TILE_N] = csr_val[jj];
-                }
+                uint64_t _m[4] = {0};
+                update_bit64(_m, ii, col % TILE_N);
+                rb_update(tile_distributions[row16], col16, _m);
             }
         }
         t->tile_row_ptr[row16 + 1] = tile_distributions[row16]->size;
@@ -1065,7 +1370,7 @@ BaseMatrix* load_mtx_2_tile(
         {
             RBTreeNode *node = rb_iterator_next(it);
             t->tile_col_idx[idx] = node->key;
-            memcpy(t->tiles[idx].bitmap, node->val.bitmap, sizeof(uint64_t) * 4);
+            memcpy(t->tiles[idx].bitmap, node->val, sizeof(uint64_t) * 4);
             idx++;
         }
         free(it);
@@ -1113,6 +1418,7 @@ BaseMatrix* load_mtx_2_tile(
     Timer timer;
     timer_start(timer);
     echo(start_status, "Setting Memory Pool");
+    // set_memory_pool(t, row_ptr, col_idx, csr_val);
     set_memory_pool(t);
     cudaDeviceSynchronize();
     timer_end(timer);
@@ -1146,12 +1452,33 @@ BaseMatrix* load_mtx_2_tile(
         while (rb_iterator_has_next(it))
         {
             RBTreeNode *node = rb_iterator_next(it);
+            
+            int col16 = node->key * TILE_N;
+            MatValue block[256] = {0};
+            uint64_t bitmap[4] = {0};
+            memcpy(bitmap, node->val, sizeof(uint64_t) * 4);
+            for (int k = 0; k < 16; ++k)
+            {
+                uint16_t row = bitmap_get_row(bitmap, k);
+                while (row)
+                {
+                    uint16_t lowbit = row & -row;
+                    int col = __builtin_ctz(lowbit);
+                    row ^= lowbit;
+                    block[k * TILE_N + col] = csr_binary_find_value(
+                        col_idx, csr_val, col16 + col, row_ptr[i * TILE_N + k], row_ptr[i * TILE_N + k + 1] - 1
+                    );
+                }
+            }
+
             dense_tile_2_fmt(
-                &(node->val),
+                bitmap,
+                block,
                 (TileIndex*) (t->data + t->tiles[j].bits_off),
                 (MatValue*) (t->data + t->tiles[j].bits_off + t->tiles[j].bitslen * 16),
                 t->tiles[j].fmt
             );
+
             ++j;
         }
         free(it);

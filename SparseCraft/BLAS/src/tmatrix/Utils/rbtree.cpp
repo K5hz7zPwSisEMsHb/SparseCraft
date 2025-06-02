@@ -1,18 +1,22 @@
 #include <tmatrix/Utils/rbtree.h>
 
-RBTree *create_rbtree() {
+RBTree *create_rbtree(copy_func_t copy_func, free_func_t free_func, merge_func_t merge_func) {
     RBTree *tree = (RBTree *)malloc(sizeof(RBTree));
     tree->nil = (RBTreeNode *)malloc(sizeof(RBTreeNode));
     tree->nil->color = BLACK;
     tree->root = tree->nil;
     tree->size = 0;
+
+    tree->copy_func = copy_func;
+    tree->free_func = free_func;
+    tree->merge_func = merge_func;
     return tree;
 }
 
-RBTreeNode *create_node(RBTree *tree, int key, dense_tile&val) {
+RBTreeNode *create_node(RBTree *tree, int key, void*val) {
     RBTreeNode *node = (RBTreeNode *)malloc(sizeof(RBTreeNode));
     node->key = key;
-    node->val = val;
+    node->val = tree->copy_func(val); // 使用复制函数复制 val
     node->color = RED; // 新插入的节点总是红色
     node->left = tree->nil;
     node->right = tree->nil;
@@ -96,7 +100,7 @@ void rb_insert_fixup(RBTree *tree, RBTreeNode *z) {
     tree->root->color = BLACK;
 }
 
-void rb_insert(RBTree *tree, int key, dense_tile&val) {
+void rb_insert(RBTree *tree, int key, void*val) {
     RBTreeNode *z = create_node(tree, key, val);
     RBTreeNode *y = tree->nil;
     RBTreeNode *x = tree->root;
@@ -135,18 +139,17 @@ RBTreeNode *rb_search(RBTree *tree, int key) {
         }
     }
 
-    return NULL; // 未找到
+    return NULL;
 }
 
-int rb_update(RBTree *tree, int key, dense_tile&new_val, dense_tile&(*op)(dense_tile&, dense_tile&)) {
+int rb_update(RBTree *tree, int key, void* new_val) {
     RBTreeNode *node = rb_search(tree, key);
     if (node == NULL) {
         rb_insert(tree, key, new_val);
-        return 0; // 未找到指定 key 的节点，更新失败
+        return 1;
     }
-    // 更新 val 值
-    node->val = op(node->val, new_val);
-    return 1; // 更新成功
+    tree->merge_func(node->val, new_val);
+    return 1;
 }
 
 RBTreeIterator *rb_iterator_init(RBTree *tree) {
@@ -196,6 +199,7 @@ void rb_free_node(RBTree *tree, RBTreeNode *node) {
     if (node != tree->nil) {
         rb_free_node(tree, node->left);
         rb_free_node(tree, node->right);
+        tree->free_func(node->val);
         free(node);
     }
 }
